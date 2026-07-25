@@ -19,13 +19,17 @@ TARGET_VEHICLES = [
 ]
 
 BASE_URL = "https://api.nhtsa.gov"
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
 
 
 def fetch_recalls(make: str, model: str, model_year: int) -> list[dict]:
     """Fetch recalls for a single make/model/year
-    
+
     API Syntax: api.nhtsa.gov/recalls/recallsByVehicle?make={MAKE}&model={MODEL}&modelYear={MODEL_YR}
+
+    Confirmed field shape (2026-07-25): PascalCase keys — Summary (defect
+    text), NHTSACampaignNumber (recall #), Manufacturer, Component, Consequence,
+    Remedy, ModelYear/Make/Model.
     """
     url = f"{BASE_URL}/recalls/recallsByVehicle"
 
@@ -38,8 +42,13 @@ def fetch_recalls(make: str, model: str, model_year: int) -> list[dict]:
  
 def fetch_complaints(make: str, model: str, model_year: int) -> list[dict]:
     """Fetch complaints for a single make/model/year
-    
+
     API Syntax: api.nhtsa.gov/complaints/complaintsByVehicle?make={MAKE}&model={MODEL}&modelYear={MODEL_YR}
+
+    Confirmed field shape (2026-07-25): lowercase/camelCase keys — summary
+    (free text), manufacturer, components, odiNumber, vin. NOTE: naming
+    convention differs from recalls (Summary vs summary) — don't assume a
+    shared key-casing scheme when writing the chunker.
     """
     url = f"{BASE_URL}/complaints/complaintsByVehicle"
 

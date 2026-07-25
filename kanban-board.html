@@ -93,7 +93,7 @@
       "Create the GitHub repo with a src/ and data/ folder, a .gitignore, and requirements.txt. Nothing fancy — just a clean place for everything else to live."],
     ["RR-002","NHTSA ingestion script (recalls + complaints)",0,"Data ingestion","done",
       "Write a script that hits NHTSA's recallsByVehicle and complaintsByVehicle endpoints for the target vehicles (Camry, CR-V, F-150) and saves the raw JSON locally."],
-    ["RR-003","Run ingestion live, verify response shape",0,"Data ingestion","todo",
+    ["RR-003","Run ingestion live, verify response shape",0,"Data ingestion","done",
       "Actually run the script against the live API (not just read the code). Open the saved JSON and confirm: is `results` the right key? What fields exist per recall (defect summary, recall number)? Do complaints include readable free-text descriptions? Field names must be confirmed before the embedding step depends on them."],
     ["RR-004","Chunk + embed into pgvector",0,"RAG","todo",
       "Set up Postgres with the pgvector extension. Chunk recall defect summaries and complaint text into passages, generate embeddings for each, and load them into a vector table."],

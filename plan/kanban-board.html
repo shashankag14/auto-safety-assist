@@ -1,7 +1,9 @@
-<div id="app">
-  <div id="loading" style="padding:2rem;text-align:center;color:var(--muted);font-family:var(--sans)">Loading board…</div>
-</div>
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>recall-radar build board</title>
 <style>
   :root {
     --bg: #FAF9F6;
@@ -80,6 +82,11 @@
 
   .empty-hint { font-size:12px; color:var(--muted); padding:14px; text-align:center; border:1px dashed var(--line); border-radius:8px; }
 </style>
+</head>
+<body>
+<div id="app">
+  <div id="loading" style="padding:2rem;text-align:center;color:var(--muted);font-family:var(--sans)">Loading board…</div>
+</div>
 
 <script>
 (function () {
@@ -161,14 +168,14 @@
       "Write up what you built, what broke along the way, and what you'd do differently next time. This writeup is what actually gets read in interviews — more than the code itself.", 4],
   ].map(([id,title,phase,skill,status,detail,estHours]) => ({ id, title, phase, skill, status, detail, estHours, notes: "", hours: 0, expanded:false }));
 
-  const STORAGE_KEY = "recall-radar-tickets";
   let tickets = [];
   let filterPhase = "all";
 
   async function load() {
     try {
-      const res = await window.storage.get(STORAGE_KEY);
-      tickets = res && res.value ? JSON.parse(res.value) : SEED;
+      const res = await fetch("/api/tickets");
+      const data = await res.json();
+      tickets = data && data.length ? data : SEED;
     } catch (e) {
       tickets = SEED;
     }
@@ -184,8 +191,13 @@
   }
 
   async function save() {
-    try { await window.storage.set(STORAGE_KEY, JSON.stringify(tickets)); }
-    catch (e) { console.error("Save failed", e); }
+    try {
+      await fetch("/api/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(tickets),
+      });
+    } catch (e) { console.error("Save failed", e); }
   }
 
   function moveTicket(id, dir) {
@@ -336,3 +348,5 @@
   load();
 })();
 </script>
+</body>
+</html>

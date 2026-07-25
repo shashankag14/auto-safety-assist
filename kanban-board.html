@@ -1,0 +1,265 @@
+<div id="app">
+  <div id="loading" style="padding:2rem;text-align:center;color:var(--muted);font-family:var(--sans)">Loading board…</div>
+</div>
+
+<style>
+  :root {
+    --bg: #FAF9F6;
+    --card: #FFFFFF;
+    --ink: #1E1D1B;
+    --muted: #6B6960;
+    --line: #E4E1D8;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    --purple-bg:#EEEDFE; --purple-line:#AFA9EC; --purple-text:#3C3489;
+    --blue-bg:#E6F1FB;   --blue-line:#85B7EB;   --blue-text:#0C447C;
+    --teal-bg:#E1F5EE;   --teal-line:#5DCAA5;   --teal-text:#085041;
+    --coral-bg:#FAECE7;  --coral-line:#F0997B;  --coral-text:#712B13;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1C1B19; --card: #262523; --ink: #ECEAE3; --muted: #9B9990; --line: #3A3834;
+      --purple-bg:#2A2750; --purple-line:#534AB7; --purple-text:#CECBF6;
+      --blue-bg:#122E4B;   --blue-line:#185FA5;   --blue-text:#B5D4F4;
+      --teal-bg:#0E3A30;   --teal-line:#0F6E56;   --teal-text:#9FE1CB;
+      --coral-bg:#3A2015;  --coral-line:#993C1D;  --coral-text:#F5C4B3;
+    }
+  }
+  #app { font-family: var(--sans); color: var(--ink); background: var(--bg); padding: 0; }
+  .board-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding: 4px 4px 16px; border-bottom:1px solid var(--line); margin-bottom:16px; }
+  .board-title { font-size:19px; font-weight:600; margin:0; }
+  .board-sub { font-size:13px; color:var(--muted); margin:2px 0 0; }
+  .controls { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  select, .btn, input[type=text] {
+    font-family: var(--sans); font-size:13px; padding:6px 10px; border-radius:6px;
+    border:1px solid var(--line); background:var(--card); color:var(--ink);
+  }
+  .btn { cursor:pointer; font-weight:500; }
+  .btn:hover { border-color: var(--muted); }
+  .btn-primary { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .progress-wrap { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+  .progress-bar { width:120px; height:6px; border-radius:3px; background:var(--line); overflow:hidden; }
+  .progress-fill { height:100%; background:var(--teal-line); }
+
+  .columns { display:grid; grid-template-columns: repeat(3, 1fr); gap:14px; }
+  @media (max-width: 720px) { .columns { grid-template-columns: 1fr; } }
+  .col { background: transparent; }
+  .col-head { display:flex; align-items:center; justify-content:space-between; padding:0 4px 10px; }
+  .col-head h3 { font-size:13px; font-weight:600; margin:0; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted); }
+  .col-count { font-family:var(--mono); font-size:12px; color:var(--muted); }
+  .col-body { display:flex; flex-direction:column; gap:8px; min-height:40px; }
+
+  .ticket {
+    position:relative; background:var(--card); border:1px solid var(--line); border-radius:8px;
+    padding:10px 12px 10px 18px; cursor:pointer;
+  }
+  .ticket::before {
+    content:""; position:absolute; left:6px; top:8px; bottom:8px; width:1px;
+    background-image: radial-gradient(circle, var(--line) 1px, transparent 1.2px);
+    background-size: 1px 7px; background-repeat: repeat-y;
+  }
+  .ticket-id { font-family:var(--mono); font-size:11px; color:var(--muted); }
+  .ticket-title { font-size:13.5px; font-weight:500; margin:3px 0 6px; line-height:1.35; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip { font-size:11px; padding:2px 7px; border-radius:99px; border:1px solid; font-weight:500; }
+  .ticket-notes { margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); font-size:12px; color:var(--muted); line-height:1.5; }
+  .ticket-actions { display:flex; gap:6px; margin-top:8px; }
+  .ticket-actions button { flex:1; font-size:11px; padding:4px 6px; border-radius:5px; border:1px solid var(--line); background:var(--bg); cursor:pointer; color:var(--ink); }
+  .ticket-actions button:hover { border-color:var(--muted); }
+  .ticket-actions button:disabled { opacity:0.35; cursor:default; }
+
+  .add-form { display:flex; gap:6px; flex-wrap:wrap; margin: 6px 0 18px; padding:12px; border:1px dashed var(--line); border-radius:8px; }
+  .add-form input[type=text] { flex:1; min-width:160px; }
+
+  .empty-hint { font-size:12px; color:var(--muted); padding:14px; text-align:center; border:1px dashed var(--line); border-radius:8px; }
+</style>
+
+<script>
+(function () {
+  const PHASES = {
+    0: { name: "Phase 0 · Build pipeline", tone: "purple" },
+    1: { name: "Phase 1 · Containers & CI/CD", tone: "blue" },
+    2: { name: "Phase 2 · Kubernetes", tone: "blue" },
+    3: { name: "Phase 3 · Cloud (AWS EKS)", tone: "blue" },
+    4: { name: "Phase 4 · IaC (Terraform)", tone: "blue" },
+    5: { name: "Phase 5 · Observability", tone: "teal" },
+    6: { name: "Phase 6 · Prod hardening", tone: "teal" },
+    7: { name: "Phase 7 · Polish & writeup", tone: "coral" },
+  };
+
+  const SEED = [
+    ["RR-001","Repo scaffold",0,"Setup","done"],
+    ["RR-002","NHTSA ingestion script (recalls + complaints)",0,"Data ingestion","done"],
+    ["RR-003","Run ingestion live, verify response shape",0,"Data ingestion","todo"],
+    ["RR-004","Chunk + embed into pgvector",0,"RAG","todo"],
+    ["RR-005","Intent classifier (lookup/search/general)",0,"ML","todo"],
+    ["RR-006","RAG retrieval + LLM answer w/ citations",0,"RAG","todo"],
+    ["RR-007","End-to-end script working (question in, answer out)",0,"RAG","todo"],
+    ["RR-008","Split pipeline into 3 services",1,"Architecture","todo"],
+    ["RR-009","Dockerize each service",1,"Docker","todo"],
+    ["RR-010","docker-compose local run",1,"Docker","todo"],
+    ["RR-011","GitHub Actions CI pipeline",1,"CI/CD","todo"],
+    ["RR-012","Local k8s cluster (kind/minikube)",2,"Kubernetes","todo"],
+    ["RR-013","Deployments + Services for all 3 apps",2,"Kubernetes","todo"],
+    ["RR-014","ConfigMaps / Secrets",2,"Kubernetes","todo"],
+    ["RR-015","Readiness / liveness probes",2,"Kubernetes","todo"],
+    ["RR-016","HPA + load test with k6",2,"Kubernetes","todo"],
+    ["RR-017","Deploy to real EKS cluster",3,"Cloud (AWS)","todo"],
+    ["RR-018","IAM roles for service accounts",3,"Cloud (AWS)","todo"],
+    ["RR-019","ECR + ALB ingress + VPC basics",3,"Cloud (AWS)","todo"],
+    ["RR-020","Terraform: VPC + EKS cluster",4,"IaC","todo"],
+    ["RR-021","terraform apply / destroy workflow",4,"IaC","todo"],
+    ["RR-022","Prometheus + Grafana setup",5,"Observability","todo"],
+    ["RR-023","Per-stage latency dashboards",5,"Observability","todo"],
+    ["RR-024","OpenTelemetry tracing across services",5,"Observability","todo"],
+    ["RR-025","Alerting rules (p95 latency)",5,"Observability","todo"],
+    ["RR-026","Canary / blue-green rollout for new model",6,"Prod hardening","todo"],
+    ["RR-027","Secrets via AWS Secrets Manager",6,"Prod hardening","todo"],
+    ["RR-028","Cost monitoring / tagging",6,"Prod hardening","todo"],
+    ["RR-029","Rollback drill (ship bad model, roll back)",6,"Prod hardening","todo"],
+    ["RR-030","Load test for concurrency ceiling",7,"Documentation","todo"],
+    ["RR-031","Final architecture diagram",7,"Documentation","todo"],
+    ["RR-032","Case-study writeup",7,"Documentation","todo"],
+  ].map(([id,title,phase,skill,status]) => ({ id, title, phase, skill, status, notes: "", expanded:false }));
+
+  const STORAGE_KEY = "recall-radar-tickets";
+  let tickets = [];
+  let filterPhase = "all";
+
+  async function load() {
+    try {
+      const res = await window.storage.get(STORAGE_KEY);
+      tickets = res && res.value ? JSON.parse(res.value) : SEED;
+    } catch (e) {
+      tickets = SEED;
+    }
+    if (!tickets.length) tickets = SEED;
+    render();
+  }
+
+  async function save() {
+    try { await window.storage.set(STORAGE_KEY, JSON.stringify(tickets)); }
+    catch (e) { console.error("Save failed", e); }
+  }
+
+  function moveTicket(id, dir) {
+    const order = ["todo","inprogress","done"];
+    const t = tickets.find(t => t.id === id);
+    if (!t) return;
+    const idx = order.indexOf(t.status);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx > 2) return;
+    t.status = order[newIdx];
+    save(); render();
+  }
+
+  function toggleExpand(id) {
+    const t = tickets.find(t => t.id === id);
+    if (t) t.expanded = !t.expanded;
+    render();
+  }
+
+  function addTicket(title, phase, skill) {
+    if (!title.trim()) return;
+    const num = tickets.length + 1;
+    tickets.push({
+      id: "RR-" + String(num).padStart(3,"0"),
+      title: title.trim(), phase: Number(phase), skill: skill.trim() || "General",
+      status: "todo", notes: "", expanded:false
+    });
+    save(); render();
+  }
+
+  function ticketCard(t) {
+    const tone = PHASES[t.phase].tone;
+    const canLeft = t.status !== "todo";
+    const canRight = t.status !== "done";
+    return `
+      <div class="ticket" data-id="${t.id}">
+        <div onclick="window.__rrToggle('${t.id}')">
+          <div class="ticket-id">${t.id}</div>
+          <div class="ticket-title">${escapeHtml(t.title)}</div>
+          <div class="chips">
+            <span class="chip" style="background:var(--${tone}-bg);border-color:var(--${tone}-line);color:var(--${tone}-text)">${PHASES[t.phase].name.split(" · ")[1]}</span>
+            <span class="chip" style="background:var(--card);border-color:var(--line);color:var(--muted)">${escapeHtml(t.skill)}</span>
+          </div>
+          ${t.expanded ? `<div class="ticket-notes">${PHASES[t.phase].name}. Move this ticket across as you make progress — no notes stored yet beyond status.</div>` : ""}
+        </div>
+        <div class="ticket-actions">
+          <button ${canLeft?"":"disabled"} onclick="window.__rrMove('${t.id}',-1)">&larr; back</button>
+          <button ${canRight?"":"disabled"} onclick="window.__rrMove('${t.id}',1)">forward &rarr;</button>
+        </div>
+      </div>`;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  function render() {
+    const filtered = filterPhase === "all" ? tickets : tickets.filter(t => String(t.phase) === filterPhase);
+    const cols = { todo: [], inprogress: [], done: [] };
+    filtered.forEach(t => cols[t.status].push(t));
+
+    const done = tickets.filter(t => t.status === "done").length;
+    const pct = tickets.length ? Math.round((done / tickets.length) * 100) : 0;
+
+    const phaseOptions = Object.entries(PHASES).map(([k,v]) => `<option value="${k}">${v.name}</option>`).join("");
+
+    document.getElementById("app").innerHTML = `
+      <div class="board-head">
+        <div>
+          <p class="board-title">recall-radar build board</p>
+          <p class="board-sub">${tickets.length} tickets · ${done} done</p>
+        </div>
+        <div class="controls">
+          <div class="progress-wrap">
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+            <span>${pct}%</span>
+          </div>
+          <select id="phaseFilter">
+            <option value="all">All phases</option>
+            ${Object.entries(PHASES).map(([k,v]) => `<option value="${k}" ${filterPhase===k?"selected":""}>${v.name}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+
+      <div class="add-form">
+        <input type="text" id="newTitle" placeholder="New ticket title…">
+        <select id="newPhase">${phaseOptions}</select>
+        <input type="text" id="newSkill" placeholder="Skill tag (e.g. Kubernetes)" style="width:160px">
+        <button class="btn btn-primary" id="addBtn">Add ticket</button>
+      </div>
+
+      <div class="columns">
+        <div class="col">
+          <div class="col-head"><h3>To do</h3><span class="col-count">${cols.todo.length}</span></div>
+          <div class="col-body">${cols.todo.length ? cols.todo.map(ticketCard).join("") : `<div class="empty-hint">Nothing here</div>`}</div>
+        </div>
+        <div class="col">
+          <div class="col-head"><h3>In progress</h3><span class="col-count">${cols.inprogress.length}</span></div>
+          <div class="col-body">${cols.inprogress.length ? cols.inprogress.map(ticketCard).join("") : `<div class="empty-hint">Nothing here</div>`}</div>
+        </div>
+        <div class="col">
+          <div class="col-head"><h3>Done</h3><span class="col-count">${cols.done.length}</span></div>
+          <div class="col-body">${cols.done.length ? cols.done.map(ticketCard).join("") : `<div class="empty-hint">Nothing here</div>`}</div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("phaseFilter").onchange = (e) => { filterPhase = e.target.value; render(); };
+    document.getElementById("addBtn").onclick = () => {
+      const title = document.getElementById("newTitle").value;
+      const phase = document.getElementById("newPhase").value;
+      const skill = document.getElementById("newSkill").value;
+      addTicket(title, phase, skill);
+    };
+  }
+
+  window.__rrMove = moveTicket;
+  window.__rrToggle = toggleExpand;
+
+  load();
+})();
+</script>

@@ -89,39 +89,71 @@
   };
 
   const SEED = [
-    ["RR-001","Repo scaffold",0,"Setup","done"],
-    ["RR-002","NHTSA ingestion script (recalls + complaints)",0,"Data ingestion","done"],
-    ["RR-003","Run ingestion live, verify response shape",0,"Data ingestion","todo"],
-    ["RR-004","Chunk + embed into pgvector",0,"RAG","todo"],
-    ["RR-005","Intent classifier (lookup/search/general)",0,"ML","todo"],
-    ["RR-006","RAG retrieval + LLM answer w/ citations",0,"RAG","todo"],
-    ["RR-007","End-to-end script working (question in, answer out)",0,"RAG","todo"],
-    ["RR-008","Split pipeline into 3 services",1,"Architecture","todo"],
-    ["RR-009","Dockerize each service",1,"Docker","todo"],
-    ["RR-010","docker-compose local run",1,"Docker","todo"],
-    ["RR-011","GitHub Actions CI pipeline",1,"CI/CD","todo"],
-    ["RR-012","Local k8s cluster (kind/minikube)",2,"Kubernetes","todo"],
-    ["RR-013","Deployments + Services for all 3 apps",2,"Kubernetes","todo"],
-    ["RR-014","ConfigMaps / Secrets",2,"Kubernetes","todo"],
-    ["RR-015","Readiness / liveness probes",2,"Kubernetes","todo"],
-    ["RR-016","HPA + load test with k6",2,"Kubernetes","todo"],
-    ["RR-017","Deploy to real EKS cluster",3,"Cloud (AWS)","todo"],
-    ["RR-018","IAM roles for service accounts",3,"Cloud (AWS)","todo"],
-    ["RR-019","ECR + ALB ingress + VPC basics",3,"Cloud (AWS)","todo"],
-    ["RR-020","Terraform: VPC + EKS cluster",4,"IaC","todo"],
-    ["RR-021","terraform apply / destroy workflow",4,"IaC","todo"],
-    ["RR-022","Prometheus + Grafana setup",5,"Observability","todo"],
-    ["RR-023","Per-stage latency dashboards",5,"Observability","todo"],
-    ["RR-024","OpenTelemetry tracing across services",5,"Observability","todo"],
-    ["RR-025","Alerting rules (p95 latency)",5,"Observability","todo"],
-    ["RR-026","Canary / blue-green rollout for new model",6,"Prod hardening","todo"],
-    ["RR-027","Secrets via AWS Secrets Manager",6,"Prod hardening","todo"],
-    ["RR-028","Cost monitoring / tagging",6,"Prod hardening","todo"],
-    ["RR-029","Rollback drill (ship bad model, roll back)",6,"Prod hardening","todo"],
-    ["RR-030","Load test for concurrency ceiling",7,"Documentation","todo"],
-    ["RR-031","Final architecture diagram",7,"Documentation","todo"],
-    ["RR-032","Case-study writeup",7,"Documentation","todo"],
-  ].map(([id,title,phase,skill,status]) => ({ id, title, phase, skill, status, notes: "", expanded:false }));
+    ["RR-001","Repo scaffold",0,"Setup","done",
+      "Create the GitHub repo with a src/ and data/ folder, a .gitignore, and requirements.txt. Nothing fancy — just a clean place for everything else to live."],
+    ["RR-002","NHTSA ingestion script (recalls + complaints)",0,"Data ingestion","done",
+      "Write a script that hits NHTSA's recallsByVehicle and complaintsByVehicle endpoints for the target vehicles (Camry, CR-V, F-150) and saves the raw JSON locally."],
+    ["RR-003","Run ingestion live, verify response shape",0,"Data ingestion","todo",
+      "Actually run the script against the live API (not just read the code). Open the saved JSON and confirm: is `results` the right key? What fields exist per recall (defect summary, recall number)? Do complaints include readable free-text descriptions? Field names must be confirmed before the embedding step depends on them."],
+    ["RR-004","Chunk + embed into pgvector",0,"RAG","todo",
+      "Set up Postgres with the pgvector extension. Chunk recall defect summaries and complaint text into passages, generate embeddings for each, and load them into a vector table."],
+    ["RR-005","Intent classifier (lookup/search/general)",0,"ML","todo",
+      "Build or fine-tune a small classifier that routes a user's question into one of: recall_lookup, complaint_search, or general_question. Reuse an approach you already know from fine-tuning work."],
+    ["RR-006","RAG retrieval + LLM answer w/ citations",0,"RAG","todo",
+      "Given a query, retrieve the top-k matching chunks from pgvector and pass them to an LLM to generate an answer that explicitly cites the recall/TSB number it came from — not just a paraphrase."],
+    ["RR-007","End-to-end script working (question in, answer out)",0,"RAG","todo",
+      "Wire ingestion → embed → classify → retrieve → generate into a single script or notebook. Correctness over elegance — this is the last purely-ML ticket before infra work starts."],
+    ["RR-008","Split pipeline into 3 services",1,"Architecture","todo",
+      "Break the single script into three services — intent classifier, retriever, answer generator — each with a clean interface (gRPC or REST) instead of direct function calls."],
+    ["RR-009","Dockerize each service",1,"Docker","todo",
+      "Write a Dockerfile per service: multi-stage build, non-root user, and a /healthz endpoint each service exposes for later use by k8s probes."],
+    ["RR-010","docker-compose local run",1,"Docker","todo",
+      "Write docker-compose.yml wiring all three services plus pgvector, so `docker-compose up` runs the entire pipeline locally with one command."],
+    ["RR-011","GitHub Actions CI pipeline",1,"CI/CD","todo",
+      "On every push: lint, run tests, build each service's Docker image, and push it to a registry (GHCR is free and simple to start with)."],
+    ["RR-012","Local k8s cluster (kind/minikube)",2,"Kubernetes","todo",
+      "Install kind or minikube and get a local cluster running. This is where you start applying manifests instead of just docker-compose."],
+    ["RR-013","Deployments + Services for all 3 apps",2,"Kubernetes","todo",
+      "Write Deployment + Service manifests for each of the three apps, plus a StatefulSet for pgvector (it needs persistent storage, unlike the stateless services)."],
+    ["RR-014","ConfigMaps / Secrets",2,"Kubernetes","todo",
+      "Move configuration values into ConfigMaps and anything sensitive (DB credentials, API keys) into Kubernetes Secrets instead of hardcoding them in manifests or images."],
+    ["RR-015","Readiness / liveness probes",2,"Kubernetes","todo",
+      "Wire each service's /healthz endpoint into readiness and liveness probes so Kubernetes can detect a hung or crashed pod and restart or stop routing to it."],
+    ["RR-016","HPA + load test with k6",2,"Kubernetes","todo",
+      "Add a Horizontal Pod Autoscaler on the retriever and answer-generator services. Use k6 or locust to simulate concurrent requests and confirm you can actually watch pods scale up under load."],
+    ["RR-017","Deploy to real EKS cluster",3,"Cloud (AWS)","todo",
+      "Provision a real EKS cluster (eksctl is the fastest path to start) and deploy the same manifests from Phase 2 there. Set a billing alert before you do anything else."],
+    ["RR-018","IAM roles for service accounts",3,"Cloud (AWS)","todo",
+      "Set up IRSA (IAM Roles for Service Accounts) so each pod gets a scoped IAM role instead of long-lived AWS credentials baked into the app."],
+    ["RR-019","ECR + ALB ingress + VPC basics",3,"Cloud (AWS)","todo",
+      "Push images to ECR instead of GHCR, expose the app externally via an ALB Ingress Controller, and get familiar with the VPC's public/private subnet split your cluster is using."],
+    ["RR-020","Terraform: VPC + EKS cluster",4,"IaC","todo",
+      "Rewrite the EKS cluster and its VPC/networking as Terraform modules instead of the manual eksctl/console setup from Phase 3."],
+    ["RR-021","terraform apply / destroy workflow",4,"IaC","todo",
+      "Practice the full plan → apply → destroy cycle end to end. Get comfortable running `terraform destroy` between work sessions — this is your main cost control lever from here on."],
+    ["RR-022","Prometheus + Grafana setup",5,"Observability","todo",
+      "Deploy Prometheus to scrape metrics from all three services, connect Grafana to it, and build one basic dashboard as a starting point."],
+    ["RR-023","Per-stage latency dashboards",5,"Observability","todo",
+      "Instrument each service to emit its own stage latency (intent classification time, retrieval time, generation time) and chart p50/p95/p99 for each in Grafana, not just an aggregate."],
+    ["RR-024","OpenTelemetry tracing across services",5,"Observability","todo",
+      "Add distributed tracing so a single request's full path and per-stage timing is visible end to end — this is what actually answers 'why was this one request slow'."],
+    ["RR-025","Alerting rules (p95 latency)",5,"Observability","todo",
+      "Configure an alert (Alertmanager or Grafana alerting) that fires when p95 latency crosses a threshold. Test it for real by artificially slowing down one service and confirming the alert fires."],
+    ["RR-026","Canary / blue-green rollout for new model",6,"Prod hardening","todo",
+      "Use Argo Rollouts (or a manual blue-green setup) to ship a new fine-tuned intent classifier version with zero downtime, routing a small percentage of traffic to it first."],
+    ["RR-027","Secrets via AWS Secrets Manager",6,"Prod hardening","todo",
+      "Move secrets out of plain Kubernetes Secrets and into AWS Secrets Manager, wired in via something like the external-secrets operator."],
+    ["RR-028","Cost monitoring / tagging",6,"Prod hardening","todo",
+      "Tag AWS resources by project, double-check your billing alert is actually working, and dig into where the EKS cluster's cost is really going — idle worker nodes are the usual surprise."],
+    ["RR-029","Rollback drill (ship bad model, roll back)",6,"Prod hardening","todo",
+      "Intentionally deploy a deliberately 'bad' model version, notice the regression (via your Phase 5 dashboards), and practice rolling back to the previous version in under a minute."],
+    ["RR-030","Load test for concurrency ceiling",7,"Documentation","todo",
+      "Run k6/locust at steadily increasing concurrency until the system falls over, and note where the actual ceiling is — this becomes a concrete number for your writeup."],
+    ["RR-031","Final architecture diagram",7,"Documentation","todo",
+      "Draw the final end-to-end architecture — all services, data flow, and infra — for the README. This is what a reviewer or interviewer will actually look at first."],
+    ["RR-032","Case-study writeup",7,"Documentation","todo",
+      "Write up what you built, what broke along the way, and what you'd do differently next time. This writeup is what actually gets read in interviews — more than the code itself."],
+  ].map(([id,title,phase,skill,status,detail]) => ({ id, title, phase, skill, status, detail, notes: "", expanded:false }));
 
   const STORAGE_KEY = "recall-radar-tickets";
   let tickets = [];
@@ -135,6 +167,11 @@
       tickets = SEED;
     }
     if (!tickets.length) tickets = SEED;
+    // Backfill `detail` for tickets saved before descriptions were added
+    const seedById = Object.fromEntries(SEED.map(t => [t.id, t]));
+    tickets.forEach(t => {
+      if (!t.detail && seedById[t.id]) t.detail = seedById[t.id].detail;
+    });
     render();
   }
 
@@ -184,7 +221,7 @@
             <span class="chip" style="background:var(--${tone}-bg);border-color:var(--${tone}-line);color:var(--${tone}-text)">${PHASES[t.phase].name.split(" · ")[1]}</span>
             <span class="chip" style="background:var(--card);border-color:var(--line);color:var(--muted)">${escapeHtml(t.skill)}</span>
           </div>
-          ${t.expanded ? `<div class="ticket-notes">${PHASES[t.phase].name}. Move this ticket across as you make progress — no notes stored yet beyond status.</div>` : ""}
+          ${t.expanded ? `<div class="ticket-notes">${escapeHtml(t.detail || "No details yet.")}</div>` : ""}
         </div>
         <div class="ticket-actions">
           <button ${canLeft?"":"disabled"} onclick="window.__rrMove('${t.id}',-1)">&larr; back</button>

@@ -41,6 +41,8 @@
   .progress-wrap { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
   .progress-bar { width:120px; height:6px; border-radius:3px; background:var(--line); overflow:hidden; }
   .progress-fill { height:100%; background:var(--teal-line); }
+  .progress-fill.over { background:var(--coral-line); }
+  .hours-over-text { color:var(--coral-text); font-weight:600; }
 
   .columns { display:grid; grid-template-columns: repeat(3, 1fr); gap:14px; }
   @media (max-width: 720px) { .columns { grid-template-columns: 1fr; } }
@@ -64,10 +66,14 @@
   .chips { display:flex; gap:6px; flex-wrap:wrap; }
   .chip { font-size:11px; padding:2px 7px; border-radius:99px; border:1px solid; font-weight:500; }
   .ticket-notes { margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); font-size:12px; color:var(--muted); line-height:1.5; }
-  .ticket-actions { display:flex; gap:6px; margin-top:8px; }
+  .ticket-actions { display:flex; gap:6px; margin-top:8px; align-items:center; }
   .ticket-actions button { flex:1; font-size:11px; padding:4px 6px; border-radius:5px; border:1px solid var(--line); background:var(--bg); cursor:pointer; color:var(--ink); }
   .ticket-actions button:hover { border-color:var(--muted); }
   .ticket-actions button:disabled { opacity:0.35; cursor:default; }
+  .hours-field { display:flex; align-items:center; gap:4px; font-size:11px; color:var(--muted); cursor:default; flex-shrink:0; white-space:nowrap; }
+  .hours-field input { width:36px; font-size:11px; padding:4px 4px; border-radius:5px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-family:var(--sans); text-align:right; }
+  .hours-field.over-budget .hours-est { color:var(--coral-text); font-weight:600; }
+  .hours-field.over-budget input { border-color:var(--coral-line); }
 
   .add-form { display:flex; gap:6px; flex-wrap:wrap; margin: 6px 0 18px; padding:12px; border:1px dashed var(--line); border-radius:8px; }
   .add-form input[type=text] { flex:1; min-width:160px; }
@@ -90,70 +96,70 @@
 
   const SEED = [
     ["RR-001","Repo scaffold",0,"Setup","done",
-      "Create the GitHub repo with a src/ and data/ folder, a .gitignore, and requirements.txt. Nothing fancy — just a clean place for everything else to live."],
+      "Create the GitHub repo with a src/ and data/ folder, a .gitignore, and requirements.txt. Nothing fancy — just a clean place for everything else to live.", 0.5],
     ["RR-002","NHTSA ingestion script (recalls + complaints)",0,"Data ingestion","done",
-      "Write a script that hits NHTSA's recallsByVehicle and complaintsByVehicle endpoints for the target vehicles (Camry, CR-V, F-150) and saves the raw JSON locally."],
+      "Write a script that hits NHTSA's recallsByVehicle and complaintsByVehicle endpoints for the target vehicles (Camry, CR-V, F-150) and saves the raw JSON locally.", 1.5],
     ["RR-003","Run ingestion live, verify response shape",0,"Data ingestion","done",
-      "Actually run the script against the live API (not just read the code). Open the saved JSON and confirm: is `results` the right key? What fields exist per recall (defect summary, recall number)? Do complaints include readable free-text descriptions? Field names must be confirmed before the embedding step depends on them."],
+      "Actually run the script against the live API (not just read the code). Open the saved JSON and confirm: is `results` the right key? What fields exist per recall (defect summary, recall number)? Do complaints include readable free-text descriptions? Field names must be confirmed before the embedding step depends on them.", 1],
     ["RR-004","Chunk + embed into pgvector",0,"RAG","todo",
-      "Set up Postgres with the pgvector extension. Chunk recall defect summaries and complaint text into passages, generate embeddings for each, and load them into a vector table."],
+      "Set up Postgres with the pgvector extension. Chunk recall defect summaries and complaint text into passages, generate embeddings for each, and load them into a vector table.", 2],
     ["RR-005","Intent classifier (lookup/search/general)",0,"ML","todo",
-      "Build or fine-tune a small classifier that routes a user's question into one of: recall_lookup, complaint_search, or general_question. Reuse an approach you already know from fine-tuning work."],
+      "Build or fine-tune a small classifier that routes a user's question into one of: recall_lookup, complaint_search, or general_question. Reuse an approach you already know from fine-tuning work.", 1.5],
     ["RR-006","RAG retrieval + LLM answer w/ citations",0,"RAG","todo",
-      "Given a query, retrieve the top-k matching chunks from pgvector and pass them to an LLM to generate an answer that explicitly cites the recall/TSB number it came from — not just a paraphrase."],
+      "Given a query, retrieve the top-k matching chunks from pgvector and pass them to an LLM to generate an answer that explicitly cites the recall/TSB number it came from — not just a paraphrase.", 1],
     ["RR-007","End-to-end script working (question in, answer out)",0,"RAG","todo",
-      "Wire ingestion → embed → classify → retrieve → generate into a single script or notebook. Correctness over elegance — this is the last purely-ML ticket before infra work starts."],
+      "Wire ingestion → embed → classify → retrieve → generate into a single script or notebook. Correctness over elegance — this is the last purely-ML ticket before infra work starts.", 0.5],
     ["RR-008","Split pipeline into 3 services",1,"Architecture","todo",
-      "Break the single script into three services — intent classifier, retriever, answer generator — each with a clean interface (gRPC or REST) instead of direct function calls."],
+      "Break the single script into three services — intent classifier, retriever, answer generator — each with a clean interface (gRPC or REST) instead of direct function calls.", 3],
     ["RR-009","Dockerize each service",1,"Docker","todo",
-      "Write a Dockerfile per service: multi-stage build, non-root user, and a /healthz endpoint each service exposes for later use by k8s probes."],
+      "Write a Dockerfile per service: multi-stage build, non-root user, and a /healthz endpoint each service exposes for later use by k8s probes.", 4],
     ["RR-010","docker-compose local run",1,"Docker","todo",
-      "Write docker-compose.yml wiring all three services plus pgvector, so `docker-compose up` runs the entire pipeline locally with one command."],
+      "Write docker-compose.yml wiring all three services plus pgvector, so `docker-compose up` runs the entire pipeline locally with one command.", 3],
     ["RR-011","GitHub Actions CI pipeline",1,"CI/CD","todo",
-      "On every push: lint, run tests, build each service's Docker image, and push it to a registry (GHCR is free and simple to start with)."],
+      "On every push: lint, run tests, build each service's Docker image, and push it to a registry (GHCR is free and simple to start with).", 4],
     ["RR-012","Local k8s cluster (kind/minikube)",2,"Kubernetes","todo",
-      "Install kind or minikube and get a local cluster running. This is where you start applying manifests instead of just docker-compose."],
+      "Install kind or minikube and get a local cluster running. This is where you start applying manifests instead of just docker-compose.", 3],
     ["RR-013","Deployments + Services for all 3 apps",2,"Kubernetes","todo",
-      "Write Deployment + Service manifests for each of the three apps, plus a StatefulSet for pgvector (it needs persistent storage, unlike the stateless services)."],
+      "Write Deployment + Service manifests for each of the three apps, plus a StatefulSet for pgvector (it needs persistent storage, unlike the stateless services).", 5],
     ["RR-014","ConfigMaps / Secrets",2,"Kubernetes","todo",
-      "Move configuration values into ConfigMaps and anything sensitive (DB credentials, API keys) into Kubernetes Secrets instead of hardcoding them in manifests or images."],
+      "Move configuration values into ConfigMaps and anything sensitive (DB credentials, API keys) into Kubernetes Secrets instead of hardcoding them in manifests or images.", 3],
     ["RR-015","Readiness / liveness probes",2,"Kubernetes","todo",
-      "Wire each service's /healthz endpoint into readiness and liveness probes so Kubernetes can detect a hung or crashed pod and restart or stop routing to it."],
+      "Wire each service's /healthz endpoint into readiness and liveness probes so Kubernetes can detect a hung or crashed pod and restart or stop routing to it.", 4],
     ["RR-016","HPA + load test with k6",2,"Kubernetes","todo",
-      "Add a Horizontal Pod Autoscaler on the retriever and answer-generator services. Use k6 or locust to simulate concurrent requests and confirm you can actually watch pods scale up under load."],
+      "Add a Horizontal Pod Autoscaler on the retriever and answer-generator services. Use k6 or locust to simulate concurrent requests and confirm you can actually watch pods scale up under load.", 7],
     ["RR-017","Deploy to real EKS cluster",3,"Cloud (AWS)","todo",
-      "Provision a real EKS cluster (eksctl is the fastest path to start) and deploy the same manifests from Phase 2 there. Set a billing alert before you do anything else."],
+      "Provision a real EKS cluster (eksctl is the fastest path to start) and deploy the same manifests from Phase 2 there. Set a billing alert before you do anything else.", 9],
     ["RR-018","IAM roles for service accounts",3,"Cloud (AWS)","todo",
-      "Set up IRSA (IAM Roles for Service Accounts) so each pod gets a scoped IAM role instead of long-lived AWS credentials baked into the app."],
+      "Set up IRSA (IAM Roles for Service Accounts) so each pod gets a scoped IAM role instead of long-lived AWS credentials baked into the app.", 6],
     ["RR-019","ECR + ALB ingress + VPC basics",3,"Cloud (AWS)","todo",
-      "Push images to ECR instead of GHCR, expose the app externally via an ALB Ingress Controller, and get familiar with the VPC's public/private subnet split your cluster is using."],
+      "Push images to ECR instead of GHCR, expose the app externally via an ALB Ingress Controller, and get familiar with the VPC's public/private subnet split your cluster is using.", 7],
     ["RR-020","Terraform: VPC + EKS cluster",4,"IaC","todo",
-      "Rewrite the EKS cluster and its VPC/networking as Terraform modules instead of the manual eksctl/console setup from Phase 3."],
+      "Rewrite the EKS cluster and its VPC/networking as Terraform modules instead of the manual eksctl/console setup from Phase 3.", 7],
     ["RR-021","terraform apply / destroy workflow",4,"IaC","todo",
-      "Practice the full plan → apply → destroy cycle end to end. Get comfortable running `terraform destroy` between work sessions — this is your main cost control lever from here on."],
+      "Practice the full plan → apply → destroy cycle end to end. Get comfortable running `terraform destroy` between work sessions — this is your main cost control lever from here on.", 3],
     ["RR-022","Prometheus + Grafana setup",5,"Observability","todo",
-      "Deploy Prometheus to scrape metrics from all three services, connect Grafana to it, and build one basic dashboard as a starting point."],
+      "Deploy Prometheus to scrape metrics from all three services, connect Grafana to it, and build one basic dashboard as a starting point.", 3],
     ["RR-023","Per-stage latency dashboards",5,"Observability","todo",
-      "Instrument each service to emit its own stage latency (intent classification time, retrieval time, generation time) and chart p50/p95/p99 for each in Grafana, not just an aggregate."],
+      "Instrument each service to emit its own stage latency (intent classification time, retrieval time, generation time) and chart p50/p95/p99 for each in Grafana, not just an aggregate.", 4],
     ["RR-024","OpenTelemetry tracing across services",5,"Observability","todo",
-      "Add distributed tracing so a single request's full path and per-stage timing is visible end to end — this is what actually answers 'why was this one request slow'."],
+      "Add distributed tracing so a single request's full path and per-stage timing is visible end to end — this is what actually answers 'why was this one request slow'.", 4],
     ["RR-025","Alerting rules (p95 latency)",5,"Observability","todo",
-      "Configure an alert (Alertmanager or Grafana alerting) that fires when p95 latency crosses a threshold. Test it for real by artificially slowing down one service and confirming the alert fires."],
+      "Configure an alert (Alertmanager or Grafana alerting) that fires when p95 latency crosses a threshold. Test it for real by artificially slowing down one service and confirming the alert fires.", 3],
     ["RR-026","Canary / blue-green rollout for new model",6,"Prod hardening","todo",
-      "Use Argo Rollouts (or a manual blue-green setup) to ship a new fine-tuned intent classifier version with zero downtime, routing a small percentage of traffic to it first."],
+      "Use Argo Rollouts (or a manual blue-green setup) to ship a new fine-tuned intent classifier version with zero downtime, routing a small percentage of traffic to it first.", 5],
     ["RR-027","Secrets via AWS Secrets Manager",6,"Prod hardening","todo",
-      "Move secrets out of plain Kubernetes Secrets and into AWS Secrets Manager, wired in via something like the external-secrets operator."],
+      "Move secrets out of plain Kubernetes Secrets and into AWS Secrets Manager, wired in via something like the external-secrets operator.", 3],
     ["RR-028","Cost monitoring / tagging",6,"Prod hardening","todo",
-      "Tag AWS resources by project, double-check your billing alert is actually working, and dig into where the EKS cluster's cost is really going — idle worker nodes are the usual surprise."],
+      "Tag AWS resources by project, double-check your billing alert is actually working, and dig into where the EKS cluster's cost is really going — idle worker nodes are the usual surprise.", 3],
     ["RR-029","Rollback drill (ship bad model, roll back)",6,"Prod hardening","todo",
-      "Intentionally deploy a deliberately 'bad' model version, notice the regression (via your Phase 5 dashboards), and practice rolling back to the previous version in under a minute."],
+      "Intentionally deploy a deliberately 'bad' model version, notice the regression (via your Phase 5 dashboards), and practice rolling back to the previous version in under a minute.", 3],
     ["RR-030","Load test for concurrency ceiling",7,"Documentation","todo",
-      "Run k6/locust at steadily increasing concurrency until the system falls over, and note where the actual ceiling is — this becomes a concrete number for your writeup."],
+      "Run k6/locust at steadily increasing concurrency until the system falls over, and note where the actual ceiling is — this becomes a concrete number for your writeup.", 2],
     ["RR-031","Final architecture diagram",7,"Documentation","todo",
-      "Draw the final end-to-end architecture — all services, data flow, and infra — for the README. This is what a reviewer or interviewer will actually look at first."],
+      "Draw the final end-to-end architecture — all services, data flow, and infra — for the README. This is what a reviewer or interviewer will actually look at first.", 2],
     ["RR-032","Case-study writeup",7,"Documentation","todo",
-      "Write up what you built, what broke along the way, and what you'd do differently next time. This writeup is what actually gets read in interviews — more than the code itself."],
-  ].map(([id,title,phase,skill,status,detail]) => ({ id, title, phase, skill, status, detail, notes: "", expanded:false }));
+      "Write up what you built, what broke along the way, and what you'd do differently next time. This writeup is what actually gets read in interviews — more than the code itself.", 4],
+  ].map(([id,title,phase,skill,status,detail,estHours]) => ({ id, title, phase, skill, status, detail, estHours, notes: "", hours: 0, expanded:false }));
 
   const STORAGE_KEY = "recall-radar-tickets";
   let tickets = [];
@@ -171,6 +177,8 @@
     const seedById = Object.fromEntries(SEED.map(t => [t.id, t]));
     tickets.forEach(t => {
       if (!t.detail && seedById[t.id]) t.detail = seedById[t.id].detail;
+      if (typeof t.hours !== "number" || isNaN(t.hours)) t.hours = 0;
+      if (typeof t.estHours !== "number" || isNaN(t.estHours)) t.estHours = seedById[t.id] ? seedById[t.id].estHours : 0;
     });
     render();
   }
@@ -197,13 +205,24 @@
     render();
   }
 
-  function addTicket(title, phase, skill) {
+  function updateHours(id, value) {
+    const t = tickets.find(t => t.id === id);
+    if (!t) return;
+    let n = parseFloat(value);
+    if (isNaN(n) || n < 0) n = 0;
+    t.hours = n;
+    save(); render();
+  }
+
+  function addTicket(title, phase, skill, estHours) {
     if (!title.trim()) return;
     const num = tickets.length + 1;
+    let est = parseFloat(estHours);
+    if (isNaN(est) || est < 0) est = 0;
     tickets.push({
       id: "RR-" + String(num).padStart(3,"0"),
       title: title.trim(), phase: Number(phase), skill: skill.trim() || "General",
-      status: "todo", notes: "", expanded:false
+      status: "todo", notes: "", estHours: est, hours: 0, expanded:false
     });
     save(); render();
   }
@@ -212,6 +231,8 @@
     const tone = PHASES[t.phase].tone;
     const canLeft = t.status !== "todo";
     const canRight = t.status !== "done";
+    const est = t.estHours || 0;
+    const over = est > 0 && t.hours > est;
     return `
       <div class="ticket" data-id="${t.id}">
         <div onclick="window.__rrToggle('${t.id}')">
@@ -226,6 +247,10 @@
         <div class="ticket-actions">
           <button ${canLeft?"":"disabled"} onclick="window.__rrMove('${t.id}',-1)">&larr; back</button>
           <button ${canRight?"":"disabled"} onclick="window.__rrMove('${t.id}',1)">forward &rarr;</button>
+          <label class="hours-field ${over ? "over-budget" : ""}" title="Hours spent / estimated" onclick="event.stopPropagation()">
+            <input type="number" min="0" step="0.5" value="${t.hours || 0}" onchange="window.__rrHours('${t.id}', this.value)">
+            <span class="hours-est">/ ${est}h est</span>
+          </label>
         </div>
       </div>`;
   }
@@ -241,6 +266,10 @@
 
     const done = tickets.filter(t => t.status === "done").length;
     const pct = tickets.length ? Math.round((done / tickets.length) * 100) : 0;
+    const totalHours = tickets.reduce((sum, t) => sum + (t.hours || 0), 0);
+    const totalEstHours = tickets.reduce((sum, t) => sum + (t.estHours || 0), 0);
+    const hoursPct = totalEstHours ? Math.round((totalHours / totalEstHours) * 100) : 0;
+    const hoursOver = totalEstHours > 0 && totalHours > totalEstHours;
 
     const phaseOptions = Object.entries(PHASES).map(([k,v]) => `<option value="${k}">${v.name}</option>`).join("");
 
@@ -251,9 +280,13 @@
           <p class="board-sub">${tickets.length} tickets · ${done} done</p>
         </div>
         <div class="controls">
-          <div class="progress-wrap">
+          <div class="progress-wrap" title="Tickets done">
             <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
             <span>${pct}%</span>
+          </div>
+          <div class="progress-wrap" title="Hours spent vs. estimated (from MLOps_Learning_Proposal.md)">
+            <div class="progress-bar"><div class="progress-fill ${hoursOver ? "over" : ""}" style="width:${Math.min(hoursPct,100)}%"></div></div>
+            <span class="${hoursOver ? "hours-over-text" : ""}">${totalHours}h / ${totalEstHours}h${hoursOver ? " over" : ""}</span>
           </div>
           <select id="phaseFilter">
             <option value="all">All phases</option>
@@ -266,6 +299,7 @@
         <input type="text" id="newTitle" placeholder="New ticket title…">
         <select id="newPhase">${phaseOptions}</select>
         <input type="text" id="newSkill" placeholder="Skill tag (e.g. Kubernetes)" style="width:160px">
+        <input type="number" id="newEstHours" placeholder="Est hrs" min="0" step="0.5" style="width:80px">
         <button class="btn btn-primary" id="addBtn">Add ticket</button>
       </div>
 
@@ -290,12 +324,14 @@
       const title = document.getElementById("newTitle").value;
       const phase = document.getElementById("newPhase").value;
       const skill = document.getElementById("newSkill").value;
-      addTicket(title, phase, skill);
+      const estHours = document.getElementById("newEstHours").value;
+      addTicket(title, phase, skill, estHours);
     };
   }
 
   window.__rrMove = moveTicket;
   window.__rrToggle = toggleExpand;
+  window.__rrHours = updateHours;
 
   load();
 })();

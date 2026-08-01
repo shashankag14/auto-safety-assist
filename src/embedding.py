@@ -2,6 +2,7 @@ import pandas as pd
 import json
 import os
 
+from pgvector.psycopg2 import register_vector
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
@@ -127,6 +128,7 @@ def main():
     logger.info(f"Number of recalls: {len(recalls_df)}")
     logger.info(f"Number of complaints: {len(complaints_df)}")
 
+    # load embedding model
     emb_model = SentenceTransformer("all-MiniLM-L6-v2")
 
     postgres_user = os.environ.get("POSTGRES_USER")
@@ -141,6 +143,9 @@ def main():
                         host="localhost", port="5432")) as conn:
         # create tables
         create_tables(conn)
+
+        # register vector extension for pgvector in pyschopg2
+        register_vector(conn)
 
         # insert recalls
         insert_recalls(conn, recalls_df, emb_model)

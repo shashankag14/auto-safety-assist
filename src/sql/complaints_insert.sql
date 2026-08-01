@@ -7,4 +7,4 @@ INSERT INTO vehicle_complaints (
     summary,
     embedding
 )
-VALUES (%s, %s, %s, %s, %s, %s, %s);
+VALUES %s;

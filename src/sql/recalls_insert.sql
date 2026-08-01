@@ -6,5 +6,5 @@ INSERT INTO vehicle_recalls (
     chunk_source,
     embedding
 )
-VALUES (%s, %s, %s, %s, %s, %s);
+VALUES %s;
 

@@ -1,15 +1,20 @@
-import pandas as pd
-import json
 import os
-
-from pgvector.psycopg2 import register_vector
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+import json
+import pandas as pd
 
 from dotenv import load_dotenv
 from loguru import logger
 from pathlib import Path
+
+# postgres and pgvector imports
+import psycopg2
+from psycopg2 import sql
+from psycopg2.extras import execute_values
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from pgvector.psycopg2 import register_vector
 from contextlib import closing
+
+# embedding model import
 from sentence_transformers import SentenceTransformer
 
 
@@ -37,11 +42,11 @@ def ensure_database_exists(postgres_user: str | None, postgres_password: str | N
             logger.info("Connected to database successfully!")
 
             # check if database already exists
-            cur.execute(f"SELECT 1 FROM pg_database WHERE datname = '{database_name}'")
+            cur.execute(f"SELECT 1 FROM pg_database WHERE datname = %s", (database_name,))
 
             # if not, then create a new one
             if not cur.fetchone():
-                cur.execute(f"CREATE DATABASE {database_name}")
+                cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database_name)))
                 logger.info(f"Database {database_name} created successfully!")
             else:
                 logger.info(f"Database {database_name} already exists")
@@ -66,27 +71,32 @@ def create_tables(conn: psycopg2.extensions.connection):
 def insert_recalls(conn: psycopg2.extensions.connection, recalls_df: pd.DataFrame, emb_model: SentenceTransformer):
     RECALLS_INSERT_QUERY = load_sql("recalls_insert.sql")
 
+    # create lists of summaries, remedies, and consequences from the recalls dataframe
+    summaries = recalls_df["Summary"].tolist()
+    remedys = recalls_df["Remedy"].tolist()
+    consequences = recalls_df["Consequence"].tolist()
+
+    # create embeddings for each recall
+    summary_embeddings = emb_model.encode(summaries).tolist()
+    remedy_embeddings = emb_model.encode(remedys).tolist()
+    consequence_embeddings = emb_model.encode(consequences).tolist()
+
+    recall_records = recalls_df.to_dict("records")
+
+    # create rows for each recall with the corresponding embedding
+    summary_rows = [(row["NHTSACampaignNumber"], row["Component"], row["vehicle_tag"], row["Summary"], "summary", emb) for row, emb in zip(recall_records, summary_embeddings)]
+    remedy_rows = [(row["NHTSACampaignNumber"], row["Component"], row["vehicle_tag"], row["Remedy"], "remedy", emb) for row, emb in zip(recall_records, remedy_embeddings)]
+    consequence_rows = [(row["NHTSACampaignNumber"], row["Component"], row["vehicle_tag"], row["Consequence"], "consequence", emb) for row, emb in zip(recall_records, consequence_embeddings)]
+
     try:
         with conn.cursor() as cur:
-            for count, (df_idx, row) in enumerate(recalls_df.iterrows()):
-                # summary 
-                summary_emb = emb_model.encode(row["Summary"]).tolist()
-                cur.execute(RECALLS_INSERT_QUERY, (row["NHTSACampaignNumber"], row["Component"], row["vehicle_tag"], row["Summary"], "summary", summary_emb))
-        
-                # remedy
-                remedy_emb = emb_model.encode(row["Remedy"]).tolist()
-                cur.execute(RECALLS_INSERT_QUERY, (row["NHTSACampaignNumber"], row["Component"], row["vehicle_tag"], row["Remedy"], "remedy", remedy_emb))
+            execute_values(cur, RECALLS_INSERT_QUERY, summary_rows)
+            execute_values(cur, RECALLS_INSERT_QUERY, remedy_rows)
+            execute_values(cur, RECALLS_INSERT_QUERY, consequence_rows)
 
-                # consequence
-                consequence_emb = emb_model.encode(row["Consequence"]).tolist()
-                cur.execute(RECALLS_INSERT_QUERY, (row["NHTSACampaignNumber"], row["Component"], row["vehicle_tag"], row["Consequence"], "consequence", consequence_emb))
-
-                # batch update to database
-                if count % 50 == 0:
-                    conn.commit()
-            
             conn.commit()
-            logger.success("Recalls inserted to database successfully!")
+
+            logger.info("Recalls inserted successfully!")
 
     except Exception as e:
         logger.error(e)
@@ -96,19 +106,21 @@ def insert_recalls(conn: psycopg2.extensions.connection, recalls_df: pd.DataFram
 def insert_complaints(conn: psycopg2.extensions.connection, complaints_df: pd.DataFrame, emb_model: SentenceTransformer):
     COMPLAINTS_INSERT_QUERY = load_sql("complaints_insert.sql")
 
+    # create list of complaints from the complaints dataframe
+    complaints = complaints_df["summary"].tolist()
+
+    # create embeddings for each complaint
+    complaints_embeddings = emb_model.encode(complaints).tolist()
+
+    # create rows for each complaint with the corresponding embedding
+    complaints_rows = [(row["odiNumber"], row["components"], row["crash"], row["fire"], row["vehicle_tag"], row["summary"], complaint_emb) for row, complaint_emb in zip(complaints_df.to_dict("records"), complaints_embeddings)]
+
     try:
         with conn.cursor() as cur:
-            for count, (df_idx, row) in enumerate(complaints_df.iterrows()):
-                # complaint
-                complaint_emb = emb_model.encode(row["summary"]).tolist()
-                cur.execute(COMPLAINTS_INSERT_QUERY, (row["odiNumber"], row["components"], row["crash"], row["fire"], row["vehicle_tag"], row["summary"], complaint_emb))
+            execute_values(cur, COMPLAINTS_INSERT_QUERY, complaints_rows)
 
-                # batch update to database
-                if count % 50 == 0:
-                    conn.commit()
-            
             conn.commit()
-            logger.success("Complaints inserted to database successfully!")
+            logger.info("Complaints inserted successfully!")
 
     except Exception as e:
         logger.error(e)

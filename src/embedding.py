@@ -21,6 +21,13 @@ from sentence_transformers import SentenceTransformer
 # load env variables
 load_dotenv()
 
+def get_embedding_model(model_name: str = "all-MiniLM-L6-v2") -> SentenceTransformer:
+    """
+    Load the embedding model from sentence-transformers.
+    """
+    emb_model = SentenceTransformer(model_name)
+    logger.info("Embedding model loaded successfully!")
+    return emb_model
 
 # load SQL query from file
 def load_sql(filename: str, dir: Path = Path(__file__).parent / "sql") -> str:
@@ -29,12 +36,12 @@ def load_sql(filename: str, dir: Path = Path(__file__).parent / "sql") -> str:
 
 
 # create database if it doesn't exist
-def ensure_database_exists(postgres_user: str | None, postgres_password: str | None, database_name: str = "nhtsa"):
+def ensure_database_exists(postgres_user: str | None, postgres_password: str | None, postgres_host: str = "localhost", postgres_port: str = "5432", database_name: str = "nhtsa"):
     # connect to postgres
     logger.info("Connecting to postgres...")
 
     with closing (psycopg2.connect(dbname="postgres", user=postgres_user, password=postgres_password,
-                            host="localhost", port="5432")) as conn:
+                            host=postgres_host, port=postgres_port)) as conn:
         # need to set this to create a new database in the connection block
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
@@ -141,28 +148,34 @@ def main():
     logger.info(f"Number of complaints: {len(complaints_df)}")
 
     # load embedding model
-    emb_model = SentenceTransformer("all-MiniLM-L6-v2")
+    emb_model = get_embedding_model()
 
     postgres_user = os.environ.get("POSTGRES_USER")
     postgres_password = os.environ.get("POSTGRES_PASSWORD")
+    postgres_host = os.environ.get("POSTGRES_HOST", "localhost")
+    postgres_port = os.environ.get("POSTGRES_PORT", "5432")
     database_name = os.environ.get("DATABASE_NAME") or "nhtsa"
 
     # create database if it doesn't exist
-    ensure_database_exists(postgres_user, postgres_password, database_name)
+    ensure_database_exists(postgres_user, postgres_password, postgres_host, postgres_port, database_name)
 
     # create SQL tables for recalls and complaints if they don't exist
     with closing(psycopg2.connect(dbname=database_name, user=postgres_user, password=postgres_password,
-                        host="localhost", port="5432")) as conn:
+                        host=postgres_host, port=postgres_port)) as conn:
         # create tables
+        logger.info("Creating tables (if not exists)...")
         create_tables(conn)
 
         # register vector extension for pgvector in pyschopg2
+        logger.info("Registering vector extension...")
         register_vector(conn)
 
         # insert recalls
+        logger.info("Inserting recalls...")
         insert_recalls(conn, recalls_df, emb_model)
 
         # insert complaints
+        logger.info("Inserting complaints...")
         insert_complaints(conn, complaints_df, emb_model)
 
 

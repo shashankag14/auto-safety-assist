@@ -17,6 +17,8 @@ from contextlib import closing
 # embedding model import
 from sentence_transformers import SentenceTransformer
 
+from utils import load_sql_query
+
 
 # load env variables
 load_dotenv()
@@ -28,11 +30,6 @@ def get_embedding_model(model_name: str = "all-MiniLM-L6-v2") -> SentenceTransfo
     emb_model = SentenceTransformer(model_name)
     logger.info("Embedding model loaded successfully!")
     return emb_model
-
-# load SQL query from file
-def load_sql(filename: str, dir: Path = Path(__file__).parent / "sql") -> str:
-    filepath = Path(dir) / filename
-    return filepath.read_text()
 
 
 # create database if it doesn't exist
@@ -61,8 +58,8 @@ def ensure_database_exists(postgres_user: str | None, postgres_password: str | N
 
 # create tables for recalls and complaints
 def create_tables(conn: psycopg2.extensions.connection):
-    COMPLAINTS_TABLE_QUERY = load_sql("complaints_table.sql")
-    RECALLS_TABLE_QUERY = load_sql("recalls_table.sql")
+    COMPLAINTS_TABLE_QUERY = load_sql_query("complaints_table.sql")
+    RECALLS_TABLE_QUERY = load_sql_query("recalls_table.sql")
 
     try:
         with conn.cursor() as cur:
@@ -76,7 +73,7 @@ def create_tables(conn: psycopg2.extensions.connection):
 
 # insert recalls and complaints into database
 def insert_recalls(conn: psycopg2.extensions.connection, recalls_df: pd.DataFrame, emb_model: SentenceTransformer):
-    RECALLS_INSERT_QUERY = load_sql("recalls_insert.sql")
+    RECALLS_INSERT_QUERY = load_sql_query("recalls_insert.sql")
 
     # create lists of summaries, remedies, and consequences from the recalls dataframe
     summaries = recalls_df["Summary"].tolist()
@@ -111,7 +108,7 @@ def insert_recalls(conn: psycopg2.extensions.connection, recalls_df: pd.DataFram
 
 
 def insert_complaints(conn: psycopg2.extensions.connection, complaints_df: pd.DataFrame, emb_model: SentenceTransformer):
-    COMPLAINTS_INSERT_QUERY = load_sql("complaints_insert.sql")
+    COMPLAINTS_INSERT_QUERY = load_sql_query("complaints_insert.sql")
 
     # create list of complaints from the complaints dataframe
     complaints = complaints_df["summary"].tolist()

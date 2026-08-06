@@ -69,7 +69,7 @@ def create_tables(conn: psycopg2.extensions.connection):
     except Exception as e:
         logger.error(e)
         conn.rollback()
-
+        raise e
 
 # insert recalls and complaints into database
 def insert_recalls(conn: psycopg2.extensions.connection, recalls_df: pd.DataFrame, emb_model: SentenceTransformer):
@@ -105,6 +105,7 @@ def insert_recalls(conn: psycopg2.extensions.connection, recalls_df: pd.DataFram
     except Exception as e:
         logger.error(e)
         conn.rollback()
+        raise e
 
 
 def insert_complaints(conn: psycopg2.extensions.connection, complaints_df: pd.DataFrame, emb_model: SentenceTransformer):
@@ -129,9 +130,10 @@ def insert_complaints(conn: psycopg2.extensions.connection, complaints_df: pd.Da
     except Exception as e:
         logger.error(e)
         conn.rollback()
+        raise e
 
 
-def main():
+def generate_db() -> None:
     # path to recall and complaints data
     DATA_DIR = Path(__file__).parent.parent / "data"
     recall_json = DATA_DIR / "recalls.json"
@@ -177,4 +179,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    generate_db()

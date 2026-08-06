@@ -46,7 +46,7 @@ def generate_response(query: str, results: list[tuple], model: str = DEFAULT_MOD
     return response.output_text
 
 
-def main():    
+def rag_pipeline(query: str) -> str:
     postgres_user = os.environ.get("POSTGRES_USER")
     postgres_password = os.environ.get("POSTGRES_PASSWORD")
     postgres_host = os.environ.get("POSTGRES_HOST", "localhost")
@@ -54,7 +54,6 @@ def main():
 
     database_name = os.environ.get("DATABASE_NAME") or "nhtsa"
 
-    query = "My honda smells"
     logger.debug(f"Query: {query}")
     logger.debug("-" * 50)
 
@@ -95,8 +94,10 @@ def main():
     logger.info("Starting LLM call...")
     answer = generate_response(query, results)
 
-    logger.info(f"Answer: {answer}")
+    logger.info(f"Answer: {answer}")#
+
+    return answer
 
 
 if __name__ == "__main__":
-    main()
+    rag_pipeline("My honda smells")

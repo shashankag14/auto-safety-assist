@@ -59,7 +59,7 @@ def fetch_complaints(make: str, model: str, model_year: int) -> list[dict]:
     return resp.json().get("results", [])
 
 
-def ingest(vehicles: list[dict] = TARGET_VEHICLES) -> dict:
+def ingest(vehicles: list[dict] = TARGET_VEHICLES) -> None:
     """Pull recalls + complaints for all target vehicles, save to data/, return a summary"""
     DATA_DIR.mkdir(exist_ok=True)
 
@@ -69,19 +69,25 @@ def ingest(vehicles: list[dict] = TARGET_VEHICLES) -> dict:
     for v in vehicles:
         tag = f"{v['make']}_{v['model']}_{v['modelYear']}".replace(" ", "-")
         logger.debug(f"Fetching {tag} ...")
- 
-        recalls = fetch_recalls(v["make"], v["model"], v["modelYear"])
-        for r in recalls:
-            r["vehicle_tag"] = tag
-        all_recalls.extend(recalls)
- 
+
+        try:
+            recalls = fetch_recalls(v["make"], v["model"], v["modelYear"])
+            for r in recalls:
+                r["vehicle_tag"] = tag
+            all_recalls.extend(recalls)
+        except:
+            raise RuntimeError(f"Failed to fetch recalls for {tag}")
+
         time.sleep(0.5)  # be polite to a free public API — no documented rate limit, but don't hammer it
- 
-        complaints = fetch_complaints(v["make"], v["model"], v["modelYear"])
-        for c in complaints:
-            c["vehicle_tag"] = tag
-        all_complaints.extend(complaints)
- 
+
+        try:
+            complaints = fetch_complaints(v["make"], v["model"], v["modelYear"])
+            for c in complaints:
+                c["vehicle_tag"] = tag
+            all_complaints.extend(complaints)
+        except:
+            raise RuntimeError(f"Failed to fetch complaints for {tag}")
+
         time.sleep(0.5)
  
     (DATA_DIR / "recalls.json").write_text(json.dumps(all_recalls, indent=2))
@@ -93,7 +99,6 @@ def ingest(vehicles: list[dict] = TARGET_VEHICLES) -> dict:
         "total_complaints": len(all_complaints),
     }
     logger.debug(f"Done: {summary}")
-    return summary
  
  
 if __name__ == "__main__":

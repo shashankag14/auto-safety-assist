@@ -46,6 +46,7 @@ def classify_intent(query: str, model: str = DEFAULT_MODEL) -> Intent:
 def main():
     # samples queries to test the intent classifier
     queries = [
+        "my honda fuel pump smells like shit",
         "Is there a recall on my 2019 Honda CR-V for the fuel pump?",
         "Have other F-150 owners complained about the transmission slipping?",
         "What's the difference between a recall and a TSB?",

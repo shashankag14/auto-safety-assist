@@ -11,12 +11,8 @@ import json
 from pathlib import Path
 from loguru import logger
 
+from src.common.config import TARGET_VEHICLES
 
-TARGET_VEHICLES = [
-    {"make": "bmw", "model": "x5", "modelYear": 2018},
-    {"make": "toyota", "model": "camry", "modelYear": 2022},
-    {"make": "honda", "model": "cr-v", "modelYear": 2022},
-]
 
 BASE_URL = "https://api.nhtsa.gov"
 DATA_DIR = Path(__file__).parent.parent.parent / "data"

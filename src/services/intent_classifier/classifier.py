@@ -53,6 +53,10 @@ class ClassifyIntentRequest(BaseModel):
     model: Annotated[AvailableModels, Field(description="The model to use for classification")] = _get_default_model()
 
 
+class HealthResponse(BaseModel):
+    status: str
+
+
 @classifier_api.post(path="/classify",
                     response_model=ClassifyIntentResponse,
                     summary="Classify the intent of a query",
@@ -92,6 +96,24 @@ def classify_intent(req: ClassifyIntentRequest) -> ClassifyIntentResponse:
     else:
         logger.warning(f"Failed to parse intent for query: '{query}'. Falling back to GENERAL_QUESTION.")
         return ClassifyIntentResponse(intent=Intent.GENERAL_QUESTION)
+
+
+@classifier_api.get(path="/healthz",
+                    summary="Checks if the OpenAI client is constructed successfully.",
+                    response_model=HealthResponse,
+                    responses={
+                        500: {
+                            "description": "Failed to construct the OpenAI client",
+                            "content": {"application/json": {"example": {"detail": "Failed to construct the OpenAI client"}}}
+                        },
+                    })
+def healthz() -> HealthResponse:
+    """
+    Health check endpoint.
+    """
+    if client is None:
+        raise HTTPException(status_code=500, detail="Classifier instructions not set")
+    return HealthResponse(status="ok")
 
 
 if __name__ == "__main__":

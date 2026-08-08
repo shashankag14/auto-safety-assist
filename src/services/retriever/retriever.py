@@ -60,6 +60,9 @@ class RetrieverResponse(BaseModel):
     """
     candidates: Annotated[list[Candidates], Field(description="The candidates to use for response generation", min_length=1, max_length=10)]
 
+class HealthResponse(BaseModel):
+    status: str
+
 
 @retriever_api.post(path="/retrieve",
                     summary="Provides the top-k matching recalls/complaints based on user input query.",
@@ -75,7 +78,8 @@ def retrieve(req: RetrieverRequest) -> RetrieverResponse:
     # get the embedding for the query
     try:
         query_emb = emb_model.encode(req.query).tolist()
-    except Exception:
+    except Exception as e:
+        logger.error(f"Failed to create vector embedding of the input query. Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to create vector embedding of the input query.")
 
     # convert to pgvector type
@@ -101,9 +105,36 @@ def retrieve(req: RetrieverRequest) -> RetrieverResponse:
             for source, id, vehicle_tag, text, cosine_sim in top_k_candidates
         ]
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to retrieve candidates. Error: {e}")
+        logger.error(f"Failed to retrieve candidates. Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve candidates.")
 
     return RetrieverResponse(candidates=candidates)
+
+
+@retriever_api.get(path="/healthz",
+                summary="Checks if the service can reach to the postgres server.",
+                response_model=HealthResponse,
+                responses={
+                    503: {
+                        "description": "Failed to connect to database.",
+                        "content": {"application/json": {"example": {"detail": "Failed to connect to database."}}},
+                        },
+                })
+def healthz() -> HealthResponse:
+    """
+    Health check endpoint.
+    """
+    # check if service can reach to the postgres server
+    try:
+        with closing(get_connection(db_config)) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+                cur.fetchone()
+    except Exception as e:
+        logger.error(f"Failed to connect to database. Error: {e}")
+        raise HTTPException(status_code=503, detail="Failed to connect to database.")
+
+    return HealthResponse(status="ok")
 
 
 if __name__ == "__main__":

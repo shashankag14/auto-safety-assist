@@ -56,6 +56,10 @@ class GenerateResponse(BaseModel):
     response: str
 
 
+class HealthResponse(BaseModel):
+    status: str
+
+
 def build_context(candidates: list[Candidates]) -> str:
     """
     Build the context in string format to pass into the OpenAI model as an input text.
@@ -102,6 +106,24 @@ def generate_response(req: GenerateResponseRequest) -> GenerateResponse:
         raise HTTPException(status_code=500, detail="Failed to generate response")
 
     return GenerateResponse(response=response.output_text)
+
+
+@generator_api.get(path="/healthz",
+                    summary="Checks if the OpenAI client is constructed successfully.",
+                    response_model=HealthResponse,
+                    responses={
+                        500: {
+                            "description": "Failed to construct the OpenAI client",
+                            "content": {"application/json": {"example": {"detail": "Failed to construct the OpenAI client"}}}
+                        },
+                    })
+def healthz() -> HealthResponse:
+    """
+    Health check endpoint.
+    """
+    if client is None:
+        raise HTTPException(status_code=500, detail="Failed to construct the OpenAI client")
+    return HealthResponse(status="ok")
 
 
 if __name__ == "__main__":

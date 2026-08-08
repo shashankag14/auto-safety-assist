@@ -1,38 +1,32 @@
 from enum import Enum
 from loguru import logger
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 from pydantic import BaseModel, Field
 from typing import Annotated
 from fastapi import FastAPI, HTTPException
 
-from src.common.config import OPENAI_API_KEY, OPENAI_MODEL, CLASSIFIER_INSTRUCTIONS
+from src.common.config import get_classifier_config, AvailableModels
 
 
-client = OpenAI(api_key=OPENAI_API_KEY)
-api = FastAPI()
+DEFAULT_MODEL = AvailableModels.GPT_4O_MINI
+
+cfg = get_classifier_config()
+
+client = OpenAI(api_key=cfg.openai_api_key)
+
+classifier_api = FastAPI(title="Intent Classifier", description="Classify the intent of a query", version="0.1.0")
 
 
-class ClassifierModel(str, Enum):
-    """
-    Defines the set of OpenAI models allowed for intent classification.
-    """
-    GPT_4O_MINI = "gpt-4o-mini"
-    GPT_4O = "gpt-4o"
-    GPT_4_1_MINI = "gpt-4.1-mini"
-
-
-DEFAULT_CLASSIFIER_MODEL = ClassifierModel.GPT_4O_MINI
-
-
-def _get_default_model() -> ClassifierModel:
+def _get_default_model() -> AvailableModels:
     try:
-        return ClassifierModel(OPENAI_MODEL)
+        return AvailableModels(cfg.model)
     except ValueError:
         logger.warning(
-            f"OPENAI_MODEL='{OPENAI_MODEL}' is not a supported classifier model "
-            f"({[m.value for m in ClassifierModel]}). Falling back to '{DEFAULT_CLASSIFIER_MODEL.value}'."
+            f"OPENAI_MODEL='{cfg.model}' is not a supported classifier model "
+            f"({[m.value for m in AvailableModels]}). Falling back to '{DEFAULT_MODEL.value}'."
         )
-        return DEFAULT_CLASSIFIER_MODEL
+        return DEFAULT_MODEL
+
 
 class Intent(str, Enum):
     """
@@ -56,20 +50,20 @@ class ClassifyIntentRequest(BaseModel):
     Defines the request body for the classify_intent endpoint.
     """
     query: Annotated[str, Field(description="The query to classify", min_length=10, max_length=300)]
-    model: Annotated[ClassifierModel, Field(description="The model to use for classification")] = _get_default_model()
+    model: Annotated[AvailableModels, Field(description="The model to use for classification")] = _get_default_model()
 
 
-@api.post(path="/classify",
-          response_model=ClassifyIntentResponse,
-          summary="Classify the intent of a query",
-          response_description="The intent of the query. " \
-          "One of the following: RECALL_LOOKUP, COMPLAINT_SEARCH, GENERAL_QUESTION",
-          responses={
-              500: {
-                  "description": "Failed to parse the intent classification response from the model",
-                  "content": {"application/json": {"example": {"detail": "Failed to parse intent"}}},
-              },
-          })
+@classifier_api.post(path="/classify",
+                    response_model=ClassifyIntentResponse,
+                    summary="Classify the intent of a query",
+                    response_description="The intent of the query. " \
+                    "One of the following: RECALL_LOOKUP, COMPLAINT_SEARCH, GENERAL_QUESTION",
+                    responses={
+                        500: {
+                            "description": "Failed to parse the intent classification response from the model",
+                            "content": {"application/json": {"example": {"detail": "Failed to parse intent"}}},
+                        },
+                    })
 @logger.catch(reraise=True)
 def classify_intent(req: ClassifyIntentRequest) -> ClassifyIntentResponse:
     """
@@ -84,11 +78,11 @@ def classify_intent(req: ClassifyIntentRequest) -> ClassifyIntentResponse:
         # parse the intent
         response = client.responses.parse(
             model=req.model,
-            instructions=CLASSIFIER_INSTRUCTIONS,
+            instructions=cfg.instructions,
             input=query,
             text_format=ClassifyIntentResponse,
         )
-    except:
+    except OpenAIError:
         raise HTTPException(status_code=500, detail="Failed to parse intent")
 
     # Check if output_parsed is None before accessing its attributes
@@ -103,4 +97,4 @@ def classify_intent(req: ClassifyIntentRequest) -> ClassifyIntentResponse:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(api, host="0.0.0.0", port=8000)
+    uvicorn.run(classifier_api, host=cfg.host, port=cfg.port)

@@ -2,7 +2,7 @@ from pathlib import Path
 from loguru import logger
 
 # api service
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import Annotated
 
@@ -63,18 +63,33 @@ class RetrieverResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
 
+class DatabaseDetails(BaseModel):
+    """
+    Defines the response body for the database_details endpoint.
+    """
+    recalls_count: Annotated[int, Field(description="The number of recalls in the database")]
+    complaints_count: Annotated[int, Field(description="The number of complaints in the database")]
+
 
 @retriever_api.post(path="/retrieve",
                     summary="Provides the top-k matching recalls/complaints based on user input query.",
                     response_model=RetrieverResponse,
                     responses={
-                        500: {
-                            "description": "Failed to retrieve candidates",
+                        status.HTTP_404_NOT_FOUND: {
+                            "description": "No matching recalls/complaints found",
+                            "content": {"application/json": {"example": {"detail": "No matching recall/complaints found."}}},
+                        },
+                        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+                            "description": "Failed to embed the query or retrieve candidates",
                             "content": {"application/json": {"example": {"detail": "Failed to retrieve candidates"}}},
                         },
                     })
 @logger.catch(reraise=True)
 def retrieve(req: RetrieverRequest) -> RetrieverResponse:
+    """
+    Embeds the input query and runs a cosine-similarity search over the
+    recalls/complaints vector store, returning the top-k matches.
+    """
     # get the embedding for the query
     try:
         query_emb = emb_model.encode(req.query).tolist()
@@ -94,7 +109,8 @@ def retrieve(req: RetrieverRequest) -> RetrieverResponse:
     # Check if there are any top-k retrieved candidates available
     if not top_k_candidates:
         # TODO: fallback to GENERAL_QUESTION intent route
-        raise HTTPException(status_code=404, detail="No matching recall/complaints found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="No matching recall/complaints found.")
 
     logger.info("Vector search complete!")
 
@@ -106,9 +122,44 @@ def retrieve(req: RetrieverRequest) -> RetrieverResponse:
         ]
     except Exception as e:
         logger.error(f"Failed to retrieve candidates. Error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve candidates.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Failed to retrieve candidates.")
 
     return RetrieverResponse(candidates=candidates)
+
+
+@retriever_api.get(path="/database_details",
+                summary="Provides the number of recalls and complaints in the database.",
+                response_model=DatabaseDetails,
+                responses={
+                        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+                            "description": "Failed to fetch database details",
+                            "content": {"application/json": {"example": {"detail": "Failed to fetch database details"}}},
+                        },
+                })
+@logger.catch(reraise=True)
+def get_database_details() -> DatabaseDetails:
+    """
+    Fetches the number of recalls and complaints in the database.
+    """
+    try:
+        with closing(get_connection(db_config)) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM vehicle_recalls")
+                recalls_count = cur.fetchone()
+
+                cur.execute("SELECT COUNT(*) FROM vehicle_complaints")
+                complaints_count = cur.fetchone()
+
+        if recalls_count is None or complaints_count is None:
+            raise ValueError("COUNT(*) query returned no rows")
+
+    except Exception as e:
+        logger.error(f"Failed to retrieve database details. Error: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Failed to retrieve database details.")
+
+    return DatabaseDetails(recalls_count=recalls_count[0], complaints_count=complaints_count[0])
 
 
 @retriever_api.get(path="/healthz",
@@ -121,8 +172,10 @@ def retrieve(req: RetrieverRequest) -> RetrieverResponse:
                         },
                 })
 def healthz() -> HealthResponse:
-    """
-    Health check endpoint.
+    """Health check endpoint to check if the service can reach to the postgres server.
+
+    Returns:
+        HealthResponse: A schema containing the status of the service.
     """
     # check if service can reach to the postgres server
     try:
@@ -132,7 +185,7 @@ def healthz() -> HealthResponse:
                 cur.fetchone()
     except Exception as e:
         logger.error(f"Failed to connect to database. Error: {e}")
-        raise HTTPException(status_code=503, detail="Failed to connect to database.")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to connect to database.")
 
     return HealthResponse(status="ok")
 

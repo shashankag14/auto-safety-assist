@@ -1,9 +1,13 @@
-from openai import OpenAI, OpenAIError
-from enum import Enum
+# logging
 from loguru import logger
+
+# openai imports
+from openai import OpenAI, OpenAIError
+
+# api service
 from pydantic import BaseModel, Field
 from typing import Annotated
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, status
 
 # local packages
 from src.common.config import get_response_generator_config, AvailableModels
@@ -75,7 +79,7 @@ def build_context(candidates: list[Candidates]) -> str:
                     summary="Generate a response to a query",
                     response_description="The generated response",
                     responses={
-                        500: {
+                        status.HTTP_500_INTERNAL_SERVER_ERROR: {
                             "description": "Failed to generate the response",
                             "content": {"application/json": {"example": {"detail": "Failed to generate response"}}},
                         },
@@ -103,7 +107,8 @@ def generate_response(req: GenerateResponseRequest) -> GenerateResponse:
             input=input_text,
         )
     except OpenAIError:
-        raise HTTPException(status_code=500, detail="Failed to generate response")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Failed to generate response")
 
     return GenerateResponse(response=response.output_text)
 
@@ -112,7 +117,7 @@ def generate_response(req: GenerateResponseRequest) -> GenerateResponse:
                     summary="Checks if the OpenAI client is constructed successfully.",
                     response_model=HealthResponse,
                     responses={
-                        500: {
+                        status.HTTP_500_INTERNAL_SERVER_ERROR: {
                             "description": "Failed to construct the OpenAI client",
                             "content": {"application/json": {"example": {"detail": "Failed to construct the OpenAI client"}}}
                         },
@@ -122,7 +127,8 @@ def healthz() -> HealthResponse:
     Health check endpoint.
     """
     if client is None:
-        raise HTTPException(status_code=500, detail="Failed to construct the OpenAI client")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Failed to construct the OpenAI client")
     return HealthResponse(status="ok")
 
 

@@ -1,9 +1,13 @@
 from enum import Enum
 from loguru import logger
+
+# openai imports
 from openai import OpenAI, OpenAIError
+
+# api service
 from pydantic import BaseModel, Field
 from typing import Annotated
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, status
 
 from src.common.config import get_classifier_config, AvailableModels
 
@@ -63,7 +67,7 @@ class HealthResponse(BaseModel):
                     response_description="The intent of the query. " \
                     "One of the following: RECALL_LOOKUP, COMPLAINT_SEARCH, GENERAL_QUESTION",
                     responses={
-                        500: {
+                        status.HTTP_500_INTERNAL_SERVER_ERROR: {
                             "description": "Failed to parse the intent classification response from the model",
                             "content": {"application/json": {"example": {"detail": "Failed to parse intent"}}},
                         },
@@ -87,7 +91,8 @@ def classify_intent(req: ClassifyIntentRequest) -> ClassifyIntentResponse:
             text_format=ClassifyIntentResponse,
         )
     except OpenAIError:
-        raise HTTPException(status_code=500, detail="Failed to parse intent")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Failed to parse intent")
 
     # Check if output_parsed is None before accessing its attributes
     if response and response.output_parsed:
@@ -102,7 +107,7 @@ def classify_intent(req: ClassifyIntentRequest) -> ClassifyIntentResponse:
                     summary="Checks if the OpenAI client is constructed successfully.",
                     response_model=HealthResponse,
                     responses={
-                        500: {
+                        status.HTTP_500_INTERNAL_SERVER_ERROR: {
                             "description": "Failed to construct the OpenAI client",
                             "content": {"application/json": {"example": {"detail": "Failed to construct the OpenAI client"}}}
                         },
@@ -111,8 +116,6 @@ def healthz() -> HealthResponse:
     """
     Health check endpoint.
     """
-    if client is None:
-        raise HTTPException(status_code=500, detail="Classifier instructions not set")
     return HealthResponse(status="ok")
 
 

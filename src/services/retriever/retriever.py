@@ -117,7 +117,7 @@ def retrieve(req: RetrieverRequest) -> RetrieverResponse:
     # formulate the retrieved candidates as a defined pydantic BaseModel type class
     try:
         candidates = [
-            Candidates(source=source, id=id, vehicle_tag=vehicle_tag, text=text, cosine_sim=cosine_sim)
+            Candidates(source=source, id=id, vehicle_tag=vehicle_tag, text=text, cosine_sim=round(cosine_sim, 2))
             for source, id, vehicle_tag, text, cosine_sim in top_k_candidates
         ]
     except Exception as e:

@@ -1,0 +1,41 @@
+services:
+  intent-classifier:
+    build:
+      context: .
+      dockerfile: src/services/intent_classifier/Dockerfile
+    command: ["--port", "8000", "--reload"]
+    ports:
+      - 127.0.0.1:8000:8000
+    volumes:
+      - ./src/services/intent_classifier:/app/src/services/intent_classifier
+      - ./src/common/config.py:/app/src/common/config.py
+    env_file:
+      - .env
+    
+  retriever:
+    build:
+      context: .
+      dockerfile: src/services/retriever/Dockerfile
+    command: ["--port", "8001", "--reload"]
+    ports:
+      - 127.0.0.1:8001:8001
+    volumes:
+      - ./src/services/retriever:/app/src/services/retriever
+      - ./src/common:/app/src/common
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=host.docker.internal
+
+  response-generator:
+    build:
+      context: .
+      dockerfile: src/services/response_generator/Dockerfile
+    command: ["--port", "8002", "--reload"]
+    ports:
+      - 127.0.0.1:8002:8002
+    volumes:
+      - ./src/services/response_generator:/app/src/services/response_generator
+      - ./src/common/config.py:/app/src/common/config.py
+    env_file:
+      - .env

@@ -28,7 +28,7 @@ emb_model = get_embedding_model()
 QUERIES_DIR = Path(__file__).parent / "queries"
 VECTOR_SEARCH_QUERY = load_sql_query("vector_search.sql", QUERIES_DIR)
 
-retriever_api = FastAPI(title="Retreiver based on input query",
+retriever_api = FastAPI(title="Retreiver",
                         version="0.1.0",
                         summary="Retrives top matching candidates from recall/complaints against the user input query.")
 

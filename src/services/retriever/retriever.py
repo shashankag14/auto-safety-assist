@@ -1,20 +1,21 @@
+from contextlib import closing
 from pathlib import Path
-from loguru import logger
+from typing import Annotated
 
 # api service
 from fastapi import FastAPI, HTTPException, status
-from pydantic import BaseModel, Field
-from typing import Annotated
+from loguru import logger
 
 # postgres and pgvector imports
 from pgvector import Vector
-from contextlib import closing
+from pydantic import BaseModel, Field
+
+from src.common.config import get_postgres_config, get_retriever_config
 
 # local packages
 from src.common.db import get_connection
 from src.common.embeddings import get_embedding_model
 from src.common.utils import load_sql_query
-from src.common.config import get_postgres_config, get_retriever_config
 
 # load retriever config parameters (api server, top_k etc)
 cfg = get_retriever_config()
@@ -58,7 +59,9 @@ class RetrieverResponse(BaseModel):
     """
     Defines the response body for the retriever endpoint.
     """
-    candidates: Annotated[list[Candidates], Field(description="The candidates to use for response generation", min_length=1, max_length=10)]
+    candidates: Annotated[list[Candidates],
+                          Field(description="The candidates to use for response generation",
+                                min_length=1, max_length=10)]
 
 class HealthResponse(BaseModel):
     status: str
@@ -77,7 +80,8 @@ class DatabaseDetails(BaseModel):
                     responses={
                         status.HTTP_404_NOT_FOUND: {
                             "description": "No matching recalls/complaints found",
-                            "content": {"application/json": {"example": {"detail": "No matching recall/complaints found."}}},
+                            "content": {"application/json": {"example":
+                                                             {"detail": "No matching recall/complaints found."}}},
                         },
                         status.HTTP_500_INTERNAL_SERVER_ERROR: {
                             "description": "Failed to embed the query or retrieve candidates",
@@ -95,7 +99,7 @@ def retrieve(req: RetrieverRequest) -> RetrieverResponse:
         query_emb = emb_model.encode(req.query).tolist()
     except Exception as e:
         logger.error(f"Failed to create vector embedding of the input query. Error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create vector embedding of the input query.")
+        raise HTTPException(status_code=500, detail="Failed to create vector embedding of the input query.") from e
 
     # convert to pgvector type
     query_emb = Vector(query_emb)
@@ -123,7 +127,7 @@ def retrieve(req: RetrieverRequest) -> RetrieverResponse:
     except Exception as e:
         logger.error(f"Failed to retrieve candidates. Error: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Failed to retrieve candidates.")
+                            detail="Failed to retrieve candidates.") from e
 
     return RetrieverResponse(candidates=candidates)
 
@@ -134,7 +138,8 @@ def retrieve(req: RetrieverRequest) -> RetrieverResponse:
                 responses={
                         status.HTTP_500_INTERNAL_SERVER_ERROR: {
                             "description": "Failed to fetch database details",
-                            "content": {"application/json": {"example": {"detail": "Failed to fetch database details"}}},
+                            "content": {"application/json": 
+                                        {"example": {"detail": "Failed to fetch database details"}}},
                         },
                 })
 @logger.catch(reraise=True)
@@ -157,7 +162,7 @@ def get_database_details() -> DatabaseDetails:
     except Exception as e:
         logger.error(f"Failed to retrieve database details. Error: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Failed to retrieve database details.")
+                            detail="Failed to retrieve database details.") from e
 
     return DatabaseDetails(recalls_count=recalls_count[0], complaints_count=complaints_count[0])
 
@@ -185,7 +190,8 @@ def healthz() -> HealthResponse:
                 cur.fetchone()
     except Exception as e:
         logger.error(f"Failed to connect to database. Error: {e}")
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to connect to database.")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                            detail="Failed to connect to database.") from e
 
     return HealthResponse(status="ok")
 

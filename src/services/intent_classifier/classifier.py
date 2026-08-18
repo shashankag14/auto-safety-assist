@@ -1,4 +1,7 @@
-from enum import Enum
+from enum import StrEnum
+from typing import Annotated
+
+from fastapi import FastAPI, HTTPException, status
 from loguru import logger
 
 # openai imports
@@ -6,11 +9,8 @@ from openai import OpenAI, OpenAIError
 
 # api service
 from pydantic import BaseModel, Field
-from typing import Annotated
-from fastapi import FastAPI, HTTPException, status
 
-from src.common.config import get_classifier_config, AvailableModels
-
+from src.common.config import AvailableModels, get_classifier_config
 
 DEFAULT_MODEL = AvailableModels.GPT_4O_MINI
 
@@ -32,7 +32,7 @@ def _get_default_model() -> AvailableModels:
         return DEFAULT_MODEL
 
 
-class Intent(str, Enum):
+class Intent(StrEnum):
     """
     Defines the intents that can be classified by the intent classification model.
     """
@@ -90,9 +90,9 @@ def classify_intent(req: ClassifyIntentRequest) -> ClassifyIntentResponse:
             input=query,
             text_format=ClassifyIntentResponse,
         )
-    except OpenAIError:
+    except OpenAIError as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Failed to parse intent")
+                            detail="Failed to parse intent") from e
 
     # Check if output_parsed is None before accessing its attributes
     if response and response.output_parsed:
@@ -109,7 +109,9 @@ def classify_intent(req: ClassifyIntentRequest) -> ClassifyIntentResponse:
                     responses={
                         status.HTTP_500_INTERNAL_SERVER_ERROR: {
                             "description": "Failed to construct the OpenAI client",
-                            "content": {"application/json": {"example": {"detail": "Failed to construct the OpenAI client"}}}
+                            "content": {
+                                "application/json": {"example": {"detail": "Failed to construct the OpenAI client"}}
+                            },
                         },
                     })
 def healthz() -> HealthResponse:

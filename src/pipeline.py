@@ -1,10 +1,10 @@
 from loguru import logger
 
-from src.ingestion.ingestion import ingest
 from src.ingestion.build_index import build_index
-from src.services.intent_classifier.classifier import classify_intent, Intent
-from src.services.retriever.retriever import retrieve
+from src.ingestion.ingestion import ingest
+from src.services.intent_classifier.classifier import Intent, classify_intent
 from src.services.response_generator.generator import generate_response
+from src.services.retriever.retriever import retrieve
 
 
 def run_pipeline(query: str) -> None:

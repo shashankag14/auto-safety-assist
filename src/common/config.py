@@ -1,6 +1,6 @@
 import os
-from enum import Enum
 from dataclasses import dataclass
+from enum import StrEnum
 
 from dotenv import load_dotenv
 
@@ -15,7 +15,7 @@ def _require_env(name: str) -> str:
 
 
 @dataclass(frozen=True)
-class PostgresConfig():
+class PostgresConfig:
     user: str | None
     password: str | None
     host: str
@@ -32,7 +32,7 @@ def get_postgres_config() -> PostgresConfig:
         database=os.environ.get("DATABASE_NAME", "nhtsa"),
     )
 
-class AvailableModels(str, Enum):
+class AvailableModels(StrEnum):
     """
     Defines the set of OpenAI models allowed for intent classification.
     """
@@ -52,8 +52,10 @@ class ClassifierConfig:
 CLASSIFIER_INSTRUCTIONS = """You are an intent classifier for a vehicle safety assistant.
 Classify the user's question into exactly one of these categories:
 
-- recall_lookup: the user is asking about an official recall for a vehicle (e.g. "is there a recall on my 2019 CR-V", "what does recall 21V123 fix").
-- complaint_search: the user is asking about owner-reported problems/complaints for a vehicle that are not a specific recall (e.g. "have people complained about transmission issues in the F-150").
+- recall_lookup: the user is asking about an official recall for a vehicle (e.g. "is there a recall
+  on my 2019 CR-V", "what does recall 21V123 fix").
+- complaint_search: the user is asking about owner-reported problems/complaints for a vehicle that
+  are not a specific recall (e.g. "have people complained about transmission issues in the F-150").
 - general_question: anything else (greetings, unrelated questions, or questions too vague to route).
 """
 
@@ -83,7 +85,7 @@ def get_retriever_config() -> RetrieverConfig:
 
 
 @dataclass(frozen=True)
-class ResponseGeneratorConfig():
+class ResponseGeneratorConfig:
     host: str
     port: int
     openai_api_key: str

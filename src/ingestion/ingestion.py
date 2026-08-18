@@ -4,15 +4,14 @@ fixed set of target vehicles, and cache them locally as JSON.
 NHTSA API docs: https://www.nhtsa.gov/nhtsa-datasets-and-apis
 """
 
-import requests
-import time
 import json
-
+import time
 from pathlib import Path
+
+import requests
 from loguru import logger
 
 from src.common.config import TARGET_VEHICLES
-
 
 BASE_URL = "https://api.nhtsa.gov"
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
@@ -71,8 +70,8 @@ def ingest(vehicles: list[dict] = TARGET_VEHICLES) -> None:
             for r in recalls:
                 r["vehicle_tag"] = tag
             all_recalls.extend(recalls)
-        except:
-            raise RuntimeError(f"Failed to fetch recalls for {tag}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to fetch recalls for {tag}") from e
 
         time.sleep(0.5)  # be polite to a free public API — no documented rate limit, but don't hammer it
 
@@ -81,8 +80,8 @@ def ingest(vehicles: list[dict] = TARGET_VEHICLES) -> None:
             for c in complaints:
                 c["vehicle_tag"] = tag
             all_complaints.extend(complaints)
-        except:
-            raise RuntimeError(f"Failed to fetch complaints for {tag}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to fetch complaints for {tag}") from e
 
         time.sleep(0.5)
  

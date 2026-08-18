@@ -1,4 +1,7 @@
 # logging
+from typing import Annotated
+
+from fastapi import FastAPI, HTTPException, status
 from loguru import logger
 
 # openai imports
@@ -6,12 +9,9 @@ from openai import OpenAI, OpenAIError
 
 # api service
 from pydantic import BaseModel, Field
-from typing import Annotated
-from fastapi import FastAPI, HTTPException, status
 
 # local packages
-from src.common.config import get_response_generator_config, AvailableModels
-
+from src.common.config import AvailableModels, get_response_generator_config
 
 DEFAULT_MODEL = AvailableModels.GPT_4O_MINI
 
@@ -26,7 +26,8 @@ def _get_default_model() -> AvailableModels:
     try:
         return AvailableModels(cfg.model)
     except ValueError:
-        logger.warning(f"OPENAI_MODEL='{cfg.model}' is not a supported model ({[m.value for m in AvailableModels]}). Falling back to '{DEFAULT_MODEL.value}'")
+        logger.warning(f"OPENAI_MODEL='{cfg.model}' is not a supported model ({[m.value for m in AvailableModels]}). \
+                       Falling back to '{DEFAULT_MODEL.value}'")
         return DEFAULT_MODEL
 
 
@@ -49,8 +50,11 @@ class GenerateResponseRequest(BaseModel):
     Defines the request body for the generate_response endpoint.
     """
     query: Annotated[str, Field(description="The query to generate a response for", min_length=10, max_length=300)]
-    candidates: Annotated[list[Candidates], Field(description="The candidates to use for response generation", min_length=1, max_length=10)]
-    model: Annotated[AvailableModels, Field(description="The model to use for response generation")] = _get_default_model()
+    candidates: Annotated[list[Candidates], Field(description="The candidates to use for response generation",
+                                                  min_length=1, max_length=10)]
+    model: Annotated[
+        AvailableModels, Field(description="The model to use for response generation")
+    ] = _get_default_model()
 
 
 class GenerateResponse(BaseModel):
@@ -106,9 +110,9 @@ def generate_response(req: GenerateResponseRequest) -> GenerateResponse:
             instructions=cfg.instructions,
             input=input_text,
         )
-    except OpenAIError:
+    except OpenAIError as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Failed to generate response")
+                            detail="Failed to generate response") from e
 
     return GenerateResponse(response=response.output_text)
 
@@ -119,7 +123,8 @@ def generate_response(req: GenerateResponseRequest) -> GenerateResponse:
                     responses={
                         status.HTTP_500_INTERNAL_SERVER_ERROR: {
                             "description": "Failed to construct the OpenAI client",
-                            "content": {"application/json": {"example": {"detail": "Failed to construct the OpenAI client"}}}
+                            "content": {"application/json": {"example": 
+                                                             {"detail": "Failed to construct the OpenAI client"}}}
                         },
                     })
 def healthz() -> HealthResponse:

@@ -30,3 +30,33 @@ Microservices, each independently deployable:
 - **Testing:** pytest
 - **Linting:** ruff
 - **CI/CD:** GitHub Actions (lint, test, build & push each service's image to GHCR)
+
+## Running Locally
+
+Requires Docker + Docker Compose, and a `.env` file at the repo root with your Postgres and OpenAI credentials (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `DATABASE_NAME`, `OPENAI_API_KEY`, etc. — see `src/common/config.py` for the full list of env vars each service reads).
+
+### 1. Ingest data
+
+Pulls recall/complaint data from NHTSA, embeds it, and loads it into Postgres. The `ingestion` service is compose-profiled so it doesn't run on every `up` — invoke it explicitly as a one-off job:
+
+```bash
+docker compose --profile jobs run --rm ingestion
+```
+
+This starts Postgres (if not already running) and runs the ingestion + indexing pipeline once, then exits.
+
+### 2. Run the services
+
+```bash
+docker compose up
+```
+
+Starts Postgres and the three FastAPI services:
+
+| Service | Port | Docs |
+|---|---|---|
+| intent-classifier | 8000 | http://localhost:8000/docs |
+| retriever | 8001 | http://localhost:8001/docs |
+| response-generator | 8002 | http://localhost:8002/docs |
+
+Each service exposes a `/healthz` endpoint you can hit to confirm it's up, and interactive Swagger docs at `/docs`.

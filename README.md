@@ -26,6 +26,7 @@ Microservices, each independently deployable:
 - **Packaging/deps:** `uv` / `pyproject.toml`
 - **Logging:** loguru
 - **Containerization:** Docker + Docker Compose (per-service Dockerfiles, orchestrated via `docker-compose.yml`)
+- **Container registry:** GitHub Container Registry (GHCR) for eco-system simplicity
 - **Testing:** pytest
 - **Linting:** ruff
-- **CI:** GitHub Actions
+- **CI/CD:** GitHub Actions (lint, test, build & push each service's image to GHCR)

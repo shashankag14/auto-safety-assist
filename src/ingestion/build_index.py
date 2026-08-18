@@ -54,7 +54,9 @@ def create_tables(conn: psycopg2.extensions.connection) -> None:
         raise e
 
 
-def insert_recalls(conn: psycopg2.extensions.connection, recalls_df: pd.DataFrame, emb_model: SentenceTransformer) -> None:
+def insert_recalls(
+    conn: psycopg2.extensions.connection, recalls_df: pd.DataFrame, emb_model: SentenceTransformer
+) -> None:
     recalls_insert_query = load_sql_query("recalls_insert.sql", QUERIES_DIR)
 
     summaries = recalls_df["Summary"].tolist()
@@ -67,9 +69,18 @@ def insert_recalls(conn: psycopg2.extensions.connection, recalls_df: pd.DataFram
 
     recall_records = recalls_df.to_dict("records")
 
-    summary_rows = [(row["NHTSACampaignNumber"], row["Component"], row["vehicle_tag"], row["Summary"], "summary", emb) for row, emb in zip(recall_records, summary_embeddings)]
-    remedy_rows = [(row["NHTSACampaignNumber"], row["Component"], row["vehicle_tag"], row["Remedy"], "remedy", emb) for row, emb in zip(recall_records, remedy_embeddings)]
-    consequence_rows = [(row["NHTSACampaignNumber"], row["Component"], row["vehicle_tag"], row["Consequence"], "consequence", emb) for row, emb in zip(recall_records, consequence_embeddings)]
+    summary_rows = [
+        (row["NHTSACampaignNumber"], row["Component"], row["vehicle_tag"], row["Summary"], "summary", emb)
+        for row, emb in zip(recall_records, summary_embeddings, strict=False)
+    ]
+    remedy_rows = [
+        (row["NHTSACampaignNumber"], row["Component"], row["vehicle_tag"], row["Remedy"], "remedy", emb)
+        for row, emb in zip(recall_records, remedy_embeddings, strict=False)
+    ]
+    consequence_rows = [
+        (row["NHTSACampaignNumber"], row["Component"], row["vehicle_tag"], row["Consequence"], "consequence", emb)
+        for row, emb in zip(recall_records, consequence_embeddings, strict=False)
+    ]
 
     try:
         with conn.cursor() as cur:
@@ -85,7 +96,9 @@ def insert_recalls(conn: psycopg2.extensions.connection, recalls_df: pd.DataFram
         raise e
 
 
-def insert_complaints(conn: psycopg2.extensions.connection, complaints_df: pd.DataFrame, emb_model: SentenceTransformer) -> None:
+def insert_complaints(
+    conn: psycopg2.extensions.connection, complaints_df: pd.DataFrame, emb_model: SentenceTransformer
+) -> None:
     complaints_insert_query = load_sql_query("complaints_insert.sql", QUERIES_DIR)
 
     complaints = complaints_df["summary"].tolist()
@@ -93,7 +106,7 @@ def insert_complaints(conn: psycopg2.extensions.connection, complaints_df: pd.Da
 
     complaints_rows = [
         (row["odiNumber"], row["components"], row["crash"], row["fire"], row["vehicle_tag"], row["summary"], emb)
-        for row, emb in zip(complaints_df.to_dict("records"), complaints_embeddings)
+        for row, emb in zip(complaints_df.to_dict("records"), complaints_embeddings, strict=False)
     ]
 
     try:

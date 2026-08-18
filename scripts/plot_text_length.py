@@ -1,10 +1,12 @@
 import json
-import pandas as pd
+
 import matplotlib
+import pandas as pd
+
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 
 # path to recall and complaints data
 DATA_DIR = Path('data')
@@ -31,7 +33,7 @@ print(pd.DataFrame({k: v.describe() for k, v in fields.items()}))
 
 # plot historgrams
 fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-for ax, (name, counts) in zip(axes.flat, fields.items()):
+for ax, (name, counts) in zip(axes.flat, fields.items(), strict=False):
     ax.hist(counts, bins=30)
     ax.set_title(name)
 fig.savefig(DATA_DIR / 'plots.png')

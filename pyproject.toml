@@ -1,18 +1,21 @@
 [project]
 name = "auto-safety-assist"
 version = "0.1.0"
-description = "Add your description here"
+description = "Ask your car what's wrong. It answers with citations using NHTSA recalls and complaints, no guessing."
 readme = "README.md"
+
 requires-python = ">=3.11"
+
+author = ["Shashank Agarwal"]
+author-email = ["shashankag14@gmail.com"]
+
 dependencies = [
-    "langchain>=1.3.14",
+    "fastapi>=0.141.1",
     "loguru>=0.7.3",
-    "openai>=2.52.0",
-    "pgvector>=0.5.0",
-    "psycopg2>=2.9.12",
+    "pydantic>=2.13.4",
     "python-dotenv>=1.2.2",
     "requests>=2.34.2",
-    "sentence-transformers>=5.6.1",
+    "uvicorn>=0.52.1",
 ]
 
 [dependency-groups]
@@ -20,4 +23,35 @@ dev = [
     "ipykernel>=7.3.0",
     "matplotlib>=3.11.1",
     "pandas>=3.0.5",
+    "pytest>=9.1.1",
+    "ruff>=0.16.3",
 ]
+ingestion = ["pandas>=3.0.5"]
+intent-classifier = ["openai>=2.52.0"]
+response-generator = ["openai>=2.52.0"]
+retriever = [
+    "httpx>=0.28.1",
+    "pgvector>=0.5.0",
+    "psycopg2>=2.9.12",
+    "sentence-transformers>=5.6.1",
+    "torch>=2.13.0",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

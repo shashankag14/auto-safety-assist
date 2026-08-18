@@ -1,0 +1,38 @@
+# Version control
+.git/
+.gitignore
+
+# Secrets / local env config — never bake these into an image
+.env
+.env.*
+
+# Virtual environments — built for Windows locally, wrong platform for the Linux image anyway
+.venv/
+venv/
+env/
+
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editor / tooling
+.vscode/
+.claude/
+.idea/
+
+# Project data & docs — not needed at runtime inside any service image
+data/
+docs/
+plan/
+resources/
+
+# Build artifacts
+dist/
+build/
+
+# Logs
+*.log

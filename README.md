@@ -26,3 +26,6 @@ Microservices, each independently deployable:
 - **Packaging/deps:** `uv` / `pyproject.toml`
 - **Logging:** loguru
 - **Containerization:** Docker + Docker Compose (per-service Dockerfiles, orchestrated via `docker-compose.yml`)
+- **Testing:** pytest
+- **Linting:** ruff
+- **CI:** GitHub Actions

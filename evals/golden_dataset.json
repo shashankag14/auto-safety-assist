@@ -299,7 +299,7 @@
     },
     {
       "id": "GD-019",
-      "query": "hi there",
+      "query": "hi there, is anyone able to help",
       "intent": "general_question",
       "vehicle_tag": null,
       "relevant": [],

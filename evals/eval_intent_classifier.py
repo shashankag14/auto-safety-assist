@@ -1,7 +1,7 @@
 """
 Evaluate intent classifier against evals/golden_dataset.json.
 
-Uses the real OpenAI model via the classifier's own FastAPI app (in-process,
+NOTE: Uses the real OpenAI model via the classifier's own FastAPI app (in-process,
 no server needed)
 """
 
@@ -81,6 +81,7 @@ def main() -> None:
     examples = load_examples()
     results = []
 
+    # iterate over each example in the golden dataset
     for ex in examples:
         pred = predict(ex["query"])
         results.append({

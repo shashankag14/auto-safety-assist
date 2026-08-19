@@ -11,7 +11,8 @@
       "relevant": [
         {
           "source": "recall",
-          "key": "18V652000"
+          "key": "18V652000",
+          "grade": 2
         }
       ],
       "gold_answer_contains": [
@@ -27,7 +28,8 @@
       "relevant": [
         {
           "source": "recall",
-          "key": "18V439000"
+          "key": "18V439000",
+          "grade": 2
         }
       ],
       "gold_answer_contains": [
@@ -43,7 +45,8 @@
       "relevant": [
         {
           "source": "recall",
-          "key": "21V586000"
+          "key": "21V586000",
+          "grade": 2
         }
       ],
       "gold_answer_contains": [
@@ -59,7 +62,8 @@
       "relevant": [
         {
           "source": "recall",
-          "key": "17V727000"
+          "key": "17V727000",
+          "grade": 2
         }
       ],
       "gold_answer_contains": [
@@ -75,7 +79,8 @@
       "relevant": [
         {
           "source": "recall",
-          "key": "24V608000"
+          "key": "24V608000",
+          "grade": 2
         }
       ],
       "gold_answer_contains": [
@@ -91,7 +96,8 @@
       "relevant": [
         {
           "source": "recall",
-          "key": "23V865000"
+          "key": "23V865000",
+          "grade": 2
         }
       ],
       "gold_answer_contains": [
@@ -107,7 +113,8 @@
       "relevant": [
         {
           "source": "recall",
-          "key": "23V524000"
+          "key": "23V524000",
+          "grade": 2
         }
       ],
       "gold_answer_contains": [
@@ -123,7 +130,8 @@
       "relevant": [
         {
           "source": "recall",
-          "key": "23V858000"
+          "key": "23V858000",
+          "grade": 2
         }
       ],
       "gold_answer_contains": [
@@ -139,7 +147,8 @@
       "relevant": [
         {
           "source": "recall",
-          "key": "26V332000"
+          "key": "26V332000",
+          "grade": 2
         }
       ],
       "gold_answer_contains": [
@@ -155,11 +164,13 @@
       "relevant": [
         {
           "source": "complaint",
-          "key": 11450849
+          "key": 11450849,
+          "grade": 1
         },
         {
           "source": "recall",
-          "key": "21V586000"
+          "key": "21V586000",
+          "grade": 2
         }
       ],
       "gold_answer_contains": [
@@ -175,11 +186,13 @@
       "relevant": [
         {
           "source": "complaint",
-          "key": 11665879
+          "key": 11665879,
+          "grade": 1
         },
         {
           "source": "recall",
-          "key": "24V608000"
+          "key": "24V608000",
+          "grade": 2
         }
       ],
       "gold_answer_contains": [
@@ -195,11 +208,13 @@
       "relevant": [
         {
           "source": "complaint",
-          "key": 11653764
+          "key": 11653764,
+          "grade": 1
         },
         {
           "source": "recall",
-          "key": "23V865000"
+          "key": "23V865000",
+          "grade": 2
         }
       ],
       "gold_answer_contains": [
@@ -215,7 +230,8 @@
       "relevant": [
         {
           "source": "complaint",
-          "key": 11755012
+          "key": 11755012,
+          "grade": 1
         }
       ],
       "gold_answer_contains": [
@@ -230,7 +246,8 @@
       "relevant": [
         {
           "source": "complaint",
-          "key": 11752320
+          "key": 11752320,
+          "grade": 1
         }
       ],
       "gold_answer_contains": [
@@ -245,7 +262,8 @@
       "relevant": [
         {
           "source": "complaint",
-          "key": 11508100
+          "key": 11508100,
+          "grade": 1
         }
       ],
       "gold_answer_contains": [
@@ -260,7 +278,8 @@
       "relevant": [
         {
           "source": "complaint",
-          "key": 11738027
+          "key": 11738027,
+          "grade": 1
         }
       ],
       "gold_answer_contains": [
@@ -275,7 +294,8 @@
       "relevant": [
         {
           "source": "complaint",
-          "key": 11744296
+          "key": 11744296,
+          "grade": 1
         }
       ],
       "gold_answer_contains": [
@@ -290,7 +310,8 @@
       "relevant": [
         {
           "source": "complaint",
-          "key": 11731742
+          "key": 11731742,
+          "grade": 1
         }
       ],
       "gold_answer_contains": [

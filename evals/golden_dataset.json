@@ -1,0 +1,349 @@
+{
+  "schema_version": 1,
+  "description": "Golden eval dataset for the RAG pipeline (RR-036). One shared dataset reused across intent-classifier eval, retriever eval, and generation/faithfulness eval.",
+  "notes": "`relevant[].key` uses NHTSA's natural identifiers (NHTSACampaignNumber for recalls, odiNumber for complaints), NOT the Postgres SERIAL `id` returned by vector_search.sql - that id is insertion-order-dependent and isn't stable across a rebuilt DB. Join on these natural keys against the live DB when scoring the retriever. `general_question` examples have empty `relevant`/`gold_answer_contains` because run_pipeline() short-circuits before retrieval for that intent (see src/pipeline.py) -- they only feed classifier eval.",
+  "examples": [
+    {
+      "id": "GD-001",
+      "query": "is there a recall on my 2018 bmw x5 for the charging cable catching fire",
+      "intent": "recall_lookup",
+      "vehicle_tag": "bmw_x5_2018",
+      "relevant": [
+        {
+          "source": "recall",
+          "key": "18V652000"
+        }
+      ],
+      "gold_answer_contains": [
+        "18V652",
+        "charging cable"
+      ]
+    },
+    {
+      "id": "GD-002",
+      "query": "i heard there's a recall for the front suspension control arm on the 2018 bmw x5, is that true",
+      "intent": "recall_lookup",
+      "vehicle_tag": "bmw_x5_2018",
+      "relevant": [
+        {
+          "source": "recall",
+          "key": "18V439000"
+        }
+      ],
+      "gold_answer_contains": [
+        "18V439",
+        "control arm"
+      ]
+    },
+    {
+      "id": "GD-003",
+      "query": "what is bmw recall 21v586 about",
+      "intent": "recall_lookup",
+      "vehicle_tag": "bmw_x5_2018",
+      "relevant": [
+        {
+          "source": "recall",
+          "key": "21V586000"
+        }
+      ],
+      "gold_answer_contains": [
+        "21V586",
+        "fuel pump"
+      ]
+    },
+    {
+      "id": "GD-004",
+      "query": "is there a recall on the front suspension bolts for my 2018 x5",
+      "intent": "recall_lookup",
+      "vehicle_tag": "bmw_x5_2018",
+      "relevant": [
+        {
+          "source": "recall",
+          "key": "17V727000"
+        }
+      ],
+      "gold_answer_contains": [
+        "17V727",
+        "suspension"
+      ]
+    },
+    {
+      "id": "GD-005",
+      "query": "did bmw recall the coolant pump on the x5",
+      "intent": "recall_lookup",
+      "vehicle_tag": "bmw_x5_2018",
+      "relevant": [
+        {
+          "source": "recall",
+          "key": "24V608000"
+        }
+      ],
+      "gold_answer_contains": [
+        "24V608",
+        "cooling"
+      ]
+    },
+    {
+      "id": "GD-006",
+      "query": "is my 2022 camry part of the airbag sensor recall",
+      "intent": "recall_lookup",
+      "vehicle_tag": "toyota_camry_2022",
+      "relevant": [
+        {
+          "source": "recall",
+          "key": "23V865000"
+        }
+      ],
+      "gold_answer_contains": [
+        "23V865",
+        "air bag"
+      ]
+    },
+    {
+      "id": "GD-007",
+      "query": "why did honda recall the certification label on my cr-v",
+      "intent": "recall_lookup",
+      "vehicle_tag": "honda_cr-v_2022",
+      "relevant": [
+        {
+          "source": "recall",
+          "key": "23V524000"
+        }
+      ],
+      "gold_answer_contains": [
+        "23V524",
+        "label"
+      ]
+    },
+    {
+      "id": "GD-008",
+      "query": "is there a fuel pump recall for the 2022 honda cr-v",
+      "intent": "recall_lookup",
+      "vehicle_tag": "honda_cr-v_2022",
+      "relevant": [
+        {
+          "source": "recall",
+          "key": "23V858000"
+        }
+      ],
+      "gold_answer_contains": [
+        "23V858",
+        "fuel pump"
+      ]
+    },
+    {
+      "id": "GD-009",
+      "query": "recall for the front passenger airbag sensor on honda cr-v",
+      "intent": "recall_lookup",
+      "vehicle_tag": "honda_cr-v_2022",
+      "relevant": [
+        {
+          "source": "recall",
+          "key": "26V332000"
+        }
+      ],
+      "gold_answer_contains": [
+        "26V332",
+        "air bag"
+      ]
+    },
+    {
+      "id": "GD-010",
+      "query": "my bmw x5 lost power on the highway even after the fuel pump recall was supposed to be fixed",
+      "intent": "complaint_search",
+      "vehicle_tag": "bmw_x5_2018",
+      "relevant": [
+        {
+          "source": "complaint",
+          "key": 11450849
+        },
+        {
+          "source": "recall",
+          "key": "21V586000"
+        }
+      ],
+      "gold_answer_contains": [
+        "21V586",
+        "fuel pump"
+      ]
+    },
+    {
+      "id": "GD-011",
+      "query": "bmw told me there's no part available yet for my coolant pump recall, is this a known issue",
+      "intent": "complaint_search",
+      "vehicle_tag": "bmw_x5_2018",
+      "relevant": [
+        {
+          "source": "complaint",
+          "key": 11665879
+        },
+        {
+          "source": "recall",
+          "key": "24V608000"
+        }
+      ],
+      "gold_answer_contains": [
+        "24V608",
+        "part"
+      ]
+    },
+    {
+      "id": "GD-012",
+      "query": "my camry says airbag malfunction but the dealer can't duplicate it, is this the airbag recall",
+      "intent": "complaint_search",
+      "vehicle_tag": "toyota_camry_2022",
+      "relevant": [
+        {
+          "source": "complaint",
+          "key": 11653764
+        },
+        {
+          "source": "recall",
+          "key": "23V865000"
+        }
+      ],
+      "gold_answer_contains": [
+        "23V865",
+        "air bag"
+      ]
+    },
+    {
+      "id": "GD-013",
+      "query": "have people complained about the steering not recentering on the honda cr-v",
+      "intent": "complaint_search",
+      "vehicle_tag": "honda_cr-v_2022",
+      "relevant": [
+        {
+          "source": "complaint",
+          "key": 11755012
+        }
+      ],
+      "gold_answer_contains": [
+        "steering"
+      ]
+    },
+    {
+      "id": "GD-014",
+      "query": "anyone else's cr-v randomly slam the brakes in traffic, phantom braking",
+      "intent": "complaint_search",
+      "vehicle_tag": "honda_cr-v_2022",
+      "relevant": [
+        {
+          "source": "complaint",
+          "key": 11752320
+        }
+      ],
+      "gold_answer_contains": [
+        "braking"
+      ]
+    },
+    {
+      "id": "GD-015",
+      "query": "tire tread separated at highway speed on my x5, is this a known complaint",
+      "intent": "complaint_search",
+      "vehicle_tag": "bmw_x5_2018",
+      "relevant": [
+        {
+          "source": "complaint",
+          "key": 11508100
+        }
+      ],
+      "gold_answer_contains": [
+        "tire"
+      ]
+    },
+    {
+      "id": "GD-016",
+      "query": "2022 camry grinding gears and hesitating to shift, is this a common complaint",
+      "intent": "complaint_search",
+      "vehicle_tag": "toyota_camry_2022",
+      "relevant": [
+        {
+          "source": "complaint",
+          "key": 11738027
+        }
+      ],
+      "gold_answer_contains": [
+        "transmission"
+      ]
+    },
+    {
+      "id": "GD-017",
+      "query": "my camry's wipers turn on by themselves, has anyone else reported this",
+      "intent": "complaint_search",
+      "vehicle_tag": "toyota_camry_2022",
+      "relevant": [
+        {
+          "source": "complaint",
+          "key": 11744296
+        }
+      ],
+      "gold_answer_contains": [
+        "wiper"
+      ]
+    },
+    {
+      "id": "GD-018",
+      "query": "honda cr-v hybrid body control module completely failed, is this a known complaint",
+      "intent": "complaint_search",
+      "vehicle_tag": "honda_cr-v_2022",
+      "relevant": [
+        {
+          "source": "complaint",
+          "key": 11731742
+        }
+      ],
+      "gold_answer_contains": [
+        "body control module"
+      ]
+    },
+    {
+      "id": "GD-019",
+      "query": "hi there",
+      "intent": "general_question",
+      "vehicle_tag": null,
+      "relevant": [],
+      "gold_answer_contains": []
+    },
+    {
+      "id": "GD-020",
+      "query": "what does NHTSA stand for",
+      "intent": "general_question",
+      "vehicle_tag": null,
+      "relevant": [],
+      "gold_answer_contains": []
+    },
+    {
+      "id": "GD-021",
+      "query": "how do car recalls work in general",
+      "intent": "general_question",
+      "vehicle_tag": null,
+      "relevant": [],
+      "gold_answer_contains": []
+    },
+    {
+      "id": "GD-022",
+      "query": "what's the weather like today",
+      "intent": "general_question",
+      "vehicle_tag": null,
+      "relevant": [],
+      "gold_answer_contains": []
+    },
+    {
+      "id": "GD-023",
+      "query": "thanks, that was helpful",
+      "intent": "general_question",
+      "vehicle_tag": null,
+      "relevant": [],
+      "gold_answer_contains": []
+    },
+    {
+      "id": "GD-024",
+      "query": "can you help me with something",
+      "intent": "general_question",
+      "vehicle_tag": null,
+      "relevant": [],
+      "gold_answer_contains": []
+    }
+  ]
+}

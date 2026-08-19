@@ -13,6 +13,13 @@ def get_connection(config: PostgresConfig) -> psycopg2.extensions.connection:
         host=config.host,
         port=config.port,
     )
+
+    # register_vector() requires the `vector` type to already exist on this database
+    # ensure it does before every connection, since a freshly created database won't have it yet.
+    with conn.cursor() as cur:
+        cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    conn.commit()
+
     register_vector(conn)
     return conn
 

@@ -39,7 +39,9 @@ class Candidates(BaseModel):
     (Refer the SQL database table definitions as a reference to declare the datatypes)
     """
     source: Annotated[str, Field(description="The source of the candidate")]
-    id: Annotated[int, Field(description="The ID of the candidate")]
+    id: Annotated[int, Field(description="The internal database ID of the candidate")]
+    external_id: Annotated[str, Field(description="The NHTSA campaign number (recall) or ODI number "
+                                       "(complaint) -- the ID citable to the end user")]
     vehicle_tag: Annotated[str, Field(description="The vehicle tag of the candidate")]
     text: Annotated[str, Field(description="The text of the candidate")]
     cosine_sim: Annotated[float, Field(description="The cosine similarity of the candidate", gt=0, le=1)]
@@ -74,7 +76,7 @@ def build_context(candidates: list[Candidates]) -> str:
     """
     lines = []
     for candidate in candidates:
-        lines.append(f"[{candidate.source} {candidate.id} | {candidate.vehicle_tag}]\n{candidate.text}")
+        lines.append(f"[{candidate.source} {candidate.external_id} | {candidate.vehicle_tag}]\n{candidate.text}")
     return "\n\n".join(lines)
 
 

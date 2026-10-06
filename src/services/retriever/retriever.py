@@ -42,7 +42,9 @@ class Candidates(BaseModel):
     (Refer the SQL database table definitions as a reference to declare the datatypes)
     """
     source: Annotated[str, Field(description="The source of the candidate")]
-    id: Annotated[int, Field(description="The ID of the candidate")]
+    id: Annotated[int, Field(description="The internal database ID of the candidate")]
+    external_id: Annotated[str, Field(description="The NHTSA campaign number (recall) or ODI number "
+                                       "(complaint) -- the ID citable to the end user")]
     vehicle_tag: Annotated[str, Field(description="The vehicle tag of the candidate")]
     text: Annotated[str, Field(description="The text of the candidate")]
     cosine_sim: Annotated[float, Field(description="The cosine similarity of the candidate", gt=0, le=1)]
@@ -121,8 +123,9 @@ def retrieve(req: RetrieverRequest) -> RetrieverResponse:
     # formulate the retrieved candidates as a defined pydantic BaseModel type class
     try:
         candidates = [
-            Candidates(source=source, id=id, vehicle_tag=vehicle_tag, text=text, cosine_sim=round(cosine_sim, 2))
-            for source, id, vehicle_tag, text, cosine_sim in top_k_candidates
+            Candidates(source=source, id=id, external_id=external_id, vehicle_tag=vehicle_tag, text=text,
+                       cosine_sim=round(cosine_sim, 2))
+            for source, id, external_id, vehicle_tag, text, cosine_sim in top_k_candidates
         ]
     except Exception as e:
         logger.error(f"Failed to retrieve candidates. Error: {e}")

@@ -97,13 +97,22 @@ def score_example(ex: dict, candidates: list[dict], key_lookup: dict) -> dict:
     golden = {(r["source"], r["key"]): r["grade"] for r in ex["relevant"]}
     returned = [(c["source"], key_lookup.get((c["source"], c["id"]))) for c in candidates]
 
+    # A recall is stored as 3 chunks sharing one campaign number, so collapse repeats
+    # (keeping first-occurrence order) to score precision in document units, not chunks.
+    unique_returned = list(dict.fromkeys(returned))
+
     # compute reciprocal rank
     reciprocal_rank = compute_reciprocal_rank(returned, golden)
 
     # compute precision and recall
     hits = {rk for rk in returned if rk in golden}
-    precision = len(hits) / len(returned) if returned else 0.0
+    precision = len(hits) / len(unique_returned) if unique_returned else 0.0
     recall = len(hits) / len(golden) if golden else 0.0
+    # Best precision a perfect retriever could score here: with fewer golden items than
+    # returned docs, even a perfect ranking leaves the remaining slots non-relevant.
+    precision_ceiling = (
+        min(len(golden), len(unique_returned)) / len(unique_returned) if unique_returned else 0.0
+    )
 
     # Credit a golden item only on its first (highest-ranked) occurrence -- a recall is
     # stored as 3 chunks (summary/remedy/consequence) sharing one campaign number, so the
@@ -125,7 +134,11 @@ def score_example(ex: dict, candidates: list[dict], key_lookup: dict) -> dict:
         "query": ex["query"],
         "golden": golden,
         "returned": returned,
+        "unique_returned": unique_returned,
+        "n_unique": len(unique_returned),
+        "n_returned": len(returned),
         "precision": precision,
+        "precision_ceiling": precision_ceiling,
         "recall": recall,
         "reciprocal_rank": reciprocal_rank,
         "ndcg": ndcg,
@@ -136,17 +149,23 @@ def print_report(results: list[dict]) -> None:
     n = len(results)
 
     mean_precision = sum(r["precision"] for r in results) / n
+    mean_precision_ceiling = sum(r["precision_ceiling"] for r in results) / n
 
     mean_recall = sum(r["recall"] for r in results) / n
 
     mrr = compute_mrr(results)
     mean_ndcg = compute_mean_ndcg(results)
 
+    # how many of the top-k slots hold distinct docs vs. repeat chunks of the same doc
+    mean_unique = sum(r["n_unique"] for r in results) / n
+    mean_returned = sum(r["n_returned"] for r in results) / n
+
     print(f"\nEvaluated {n} queries (top_k={retriever_cfg.top_k})\n")
-    print(f"Mean Precision@k: {mean_precision:.2f}")
+    print(f"Mean Precision@k: {mean_precision:.2f}  (ceiling {mean_precision_ceiling:.2f})")
     print(f"Mean Recall@k:    {mean_recall:.2f}")
     print(f"MRR:              {mrr:.2f}")
     print(f"Mean NDCG@k:      {mean_ndcg:.2f}")
+    print(f"Mean unique docs@k: {mean_unique:.1f} / {mean_returned:.1f}")
 
     misses = [r for r in results if r["recall"] < 1.0]
     if misses:
@@ -155,6 +174,7 @@ def print_report(results: list[dict]) -> None:
             print(f"  [{r['id']}] recall={r['recall']:.2f} | {r['query']}")
             print(f"      golden:   {sorted(r['golden'])}")
             print(f"      returned: {r['returned']}")
+            print(f"      unique:   {r['unique_returned']}")
     else:
         print("\nNo misses -- every golden-relevant item was retrieved.")
 
@@ -169,7 +189,8 @@ def main() -> None:
         result = score_example(ex, candidates, key_lookup)
         results.append(result)
         logger.info(
-            f"[{ex['id']}] precision={result['precision']:.2f} recall={result['recall']:.2f} ndcg={result['ndcg']:.2f}"
+            f"[{ex['id']}] precision={result['precision']:.2f} recall={result['recall']:.2f} ndcg={result['ndcg']:.2f} "
+            f"unique={result['n_unique']}/{result['n_returned']}"
         )
 
     print_report(results)

@@ -9,7 +9,7 @@ from src.services.intent_classifier.schemas import (
     ClassifyIntentRequest,
     ClassifyIntentResponse,
     HealthResponse,
-    Intent,
+    IntentOutput,
 )
 
 cfg = get_classifier_config()
@@ -23,7 +23,8 @@ classifier_api = FastAPI(title="Intent Classifier", description="Classify the in
                     response_model=ClassifyIntentResponse,
                     summary="Classify the intent of a query",
                     response_description="The intent of the query. " \
-                    "One of the following: RECALL_LOOKUP, COMPLAINT_SEARCH, GENERAL_QUESTION",
+                    "One of the following: RECALL_LOOKUP, COMPLAINT_SEARCH, GENERAL_QUESTION, " \
+                    "or null if the model output could not be parsed",
                     responses={
                         status.HTTP_500_INTERNAL_SERVER_ERROR: {
                             "description": "Failed to parse the intent classification response from the model",
@@ -46,19 +47,19 @@ def classify_intent(req: ClassifyIntentRequest) -> ClassifyIntentResponse:
             model=req.model,
             instructions=cfg.instructions,
             input=query,
-            text_format=ClassifyIntentResponse,
+            text_format=IntentOutput,
         )
     except OpenAIError as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Failed to parse intent") from e
 
-    # Check if output_parsed is None before accessing its attributes
+    # output_parsed is None when the model refuses or the output is truncated. Return null instead of
+    # guessing an intent, so callers can choose a safe route and evals can count it separately.
     if response and response.output_parsed:
-        return response.output_parsed
+        return ClassifyIntentResponse(intent=response.output_parsed.intent)
 
-    else:
-        logger.warning(f"Failed to parse intent for query: '{query}'. Falling back to GENERAL_QUESTION.")
-        return ClassifyIntentResponse(intent=Intent.GENERAL_QUESTION)
+    logger.warning(f"Failed to parse intent for query: '{query}'. Returning null intent.")
+    return ClassifyIntentResponse(intent=None)
 
 
 @classifier_api.get(path="/healthz",

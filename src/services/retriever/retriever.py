@@ -72,7 +72,7 @@ def retrieve(req: RetrieverRequest) -> RetrieverResponse:
 
     # Check if there are any top-k retrieved candidates available
     if not top_k_candidates:
-        # TODO: fallback to GENERAL_QUESTION intent route
+        # callers handle the 404 by answering without retrieval (see src/pipeline.py)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="No matching recall/complaints found.")
 

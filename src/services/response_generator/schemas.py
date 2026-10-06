@@ -18,6 +18,16 @@ class GenerateResponseRequest(BaseModel):
     ] = get_default_openai_model()
 
 
+class AnswerRequest(BaseModel):
+    """
+    Defines the request body for the answer endpoint (no retrieved candidates).
+    """
+    query: Annotated[str, Field(description="The query to answer", min_length=10, max_length=300)]
+    model: Annotated[
+        AvailableModels, Field(description="The model to use for response generation")
+    ] = get_default_openai_model()
+
+
 class GenerateResponse(BaseModel):
     """
     Defines the response body for the generate_response endpoint.

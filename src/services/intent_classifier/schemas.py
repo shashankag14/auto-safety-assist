@@ -15,12 +15,19 @@ class Intent(StrEnum):
     GENERAL_QUESTION = "general_question"
 
 
+class IntentOutput(BaseModel):
+    """
+    Defines the structured output the intent classification model must return.
+    """
+    intent: Intent
+
+
 class ClassifyIntentResponse(BaseModel):
     """
-    Defines the structure of the intent classification result by the intent classification model.
+    Defines the response body for the classify_intent endpoint.
     """
-    # for structured output
-    intent: Intent
+    intent: Annotated[Intent | None, Field(description="The classified intent, or null if the model output "
+                                                       "could not be parsed")]
 
 
 class ClassifyIntentRequest(BaseModel):

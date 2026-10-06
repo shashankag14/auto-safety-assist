@@ -9,7 +9,12 @@ from openai import OpenAI, OpenAIError
 # local packages
 from src.common.config import get_response_generator_config
 from src.common.schemas import Candidates
-from src.services.response_generator.schemas import GenerateResponse, GenerateResponseRequest, HealthResponse
+from src.services.response_generator.schemas import (
+    AnswerRequest,
+    GenerateResponse,
+    GenerateResponseRequest,
+    HealthResponse,
+)
 
 cfg = get_response_generator_config()
 
@@ -59,6 +64,37 @@ def generate_response(req: GenerateResponseRequest) -> GenerateResponse:
             model=model,
             instructions=cfg.instructions,
             input=input_text,
+        )
+    except OpenAIError as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Failed to generate response") from e
+
+    return GenerateResponse(response=response.output_text)
+
+
+@generator_api.post(path="/answer",
+                    response_model=GenerateResponse,
+                    summary="Answer a query without retrieved candidates",
+                    response_description="The generated response",
+                    responses={
+                        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+                            "description": "Failed to generate the response",
+                            "content": {"application/json": {"example": {"detail": "Failed to generate response"}}},
+                        },
+                    })
+@logger.catch(reraise=True)
+def answer(req: AnswerRequest) -> GenerateResponse:
+    """
+    Answer a query from general knowledge, for general questions or when no matching
+    recalls/complaints were retrieved. Never cites specific recall or complaint IDs.
+
+    - **req**: The query to answer. Must be between 10 and 300 characters.
+    """
+    try:
+        response = client.responses.create(
+            model=req.model,
+            instructions=cfg.general_instructions,
+            input=req.query,
         )
     except OpenAIError as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

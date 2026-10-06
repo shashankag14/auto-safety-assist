@@ -177,6 +177,16 @@
           "grade": 1
         },
         {
+          "source": "complaint",
+          "key": 11756344,
+          "grade": 1
+        },
+        {
+          "source": "complaint",
+          "key": 11675079,
+          "grade": 1
+        },
+        {
           "source": "recall",
           "key": "21V586000",
           "grade": 2
@@ -186,7 +196,7 @@
         "21V586",
         "fuel pump"
       ],
-      "reference_answer": "This matches recall 21V586000, under which the high-pressure fuel pump on the X5 xDrive35d may fail and stall the engine while driving. Complaint 11450849 describes a 2018 X5 that stalled while the recall repair was still pending, because the dealer said parts were not yet available."
+      "reference_answer": "Other owners report the same problem. Recall 21V586000 covers high-pressure fuel pump failures on the X5 xDrive35d that can stall the engine while driving, and complaints 11756344 and 11675079 describe 2018 X5s whose fuel pump was replaced under that recall but failed again, causing a loss of power on the freeway. Complaint 11450849 describes a 2018 X5 that stalled while the recall repair was still pending because parts were not yet available."
     },
     {
       "id": "GD-011",

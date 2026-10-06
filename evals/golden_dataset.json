@@ -1,7 +1,7 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "description": "Golden eval dataset for the RAG pipeline (RR-036). One shared dataset reused across intent-classifier eval, retriever eval, and generation/faithfulness eval.",
-  "notes": "`relevant[].key` uses NHTSA's natural identifiers (NHTSACampaignNumber for recalls, odiNumber for complaints), NOT the Postgres SERIAL `id` returned by vector_search.sql - that id is insertion-order-dependent and isn't stable across a rebuilt DB. Join on these natural keys against the live DB when scoring the retriever. `general_question` examples have empty `relevant`/`gold_answer_contains` because run_pipeline() short-circuits before retrieval for that intent (see src/pipeline.py) -- they only feed classifier eval.",
+  "notes": "`relevant[].key` uses NHTSA's natural identifiers (NHTSACampaignNumber for recalls, odiNumber for complaints), NOT the Postgres SERIAL `id` returned by vector_search.sql - that id is insertion-order-dependent and isn't stable across a rebuilt DB. Join on these natural keys against the live DB when scoring the retriever. `general_question` examples have empty `relevant`/`gold_answer_contains` because run_pipeline() short-circuits before retrieval for that intent (see src/pipeline.py) -- they only feed classifier eval. `reference_answer` (added in schema v2 for RR-040) is a short, hand-written gold answer grounded only in the relevant recall/complaint text; it is the `reference` input for RAGAS context precision/recall. It is null for general_question examples.",
   "examples": [
     {
       "id": "GD-001",
@@ -18,7 +18,8 @@
       "gold_answer_contains": [
         "18V652",
         "charging cable"
-      ]
+      ],
+      "reference_answer": "Yes, for the plug-in hybrid X5 xDrive40e. Recall 18V652000 covers certain 2018 BMW X5 xDrive40e vehicles because capacitors in the TurboCord portable charger may fail, creating a shock or fire hazard. Dealers will inspect the charging cable and replace it if necessary, free of charge."
     },
     {
       "id": "GD-002",
@@ -35,7 +36,8 @@
       "gold_answer_contains": [
         "18V439",
         "control arm"
-      ]
+      ],
+      "reference_answer": "Yes. Recall 18V439000 covers certain 2018 BMW X5 vehicles because the pivot bolt on the front lower-left control arm may not have been properly hardened, which can cause the control arm to break and affect handling, increasing the risk of a crash. Dealers will inspect the lower-left control arms and replace them if necessary, free of charge."
     },
     {
       "id": "GD-003",
@@ -52,7 +54,8 @@
       "gold_answer_contains": [
         "21V586",
         "fuel pump"
-      ]
+      ],
+      "reference_answer": "Recall 21V586000 covers certain BMW diesel vehicles, including the 2014-2018 X5 xDrive35d, because the high-pressure fuel pump may fail. A failed fuel pump can stall the engine while driving, increasing the risk of a crash. Dealers will replace the high-pressure fuel pump free of charge."
     },
     {
       "id": "GD-004",
@@ -69,7 +72,8 @@
       "gold_answer_contains": [
         "17V727",
         "suspension"
-      ]
+      ],
+      "reference_answer": "Yes. Recall 17V727000 covers certain 2018 BMW X5 vehicles because the bolts securing the front suspension may not have been properly tightened, which can affect suspension performance and increase the risk of a crash. Dealers will inspect and tighten the wishbone suspension bolts free of charge."
     },
     {
       "id": "GD-005",
@@ -86,7 +90,8 @@
       "gold_answer_contains": [
         "24V608",
         "cooling"
-      ]
+      ],
+      "reference_answer": "Yes, for the 2016-2018 X5 xDrive40e. Recall 24V608000 covers the engine cooling system's water pump: an improperly sealed electrical connector on the pump may be exposed to water and short circuit, increasing the risk of a fire. Dealers will inspect and replace the water pump and plug connector as necessary and install a protective shield, free of charge."
     },
     {
       "id": "GD-006",
@@ -103,7 +108,8 @@
       "gold_answer_contains": [
         "23V865",
         "air bag"
-      ]
+      ],
+      "reference_answer": "Recall 23V865000 covers certain 2020-2022 Toyota Camry vehicles because a short circuit may develop in the Occupant Classification System (OCS) sensor, preventing the front passenger air bag from deploying in a crash. Dealers will inspect and replace the sensor as necessary, free of charge."
     },
     {
       "id": "GD-007",
@@ -120,7 +126,8 @@
       "gold_answer_contains": [
         "23V524",
         "label"
-      ]
+      ],
+      "reference_answer": "Recall 23V524000 covers certain 2017, 2020 and 2022 Honda CR-V vehicles because the certification label on the driver's side door lists an incorrect Gross Vehicle Weight Rating, Gross Axle Weight Rating and tire size, so the vehicles fail FMVSS 110. An incorrectly sized tire can cause premature tread wear or a blowout; dealers will install a corrected label free of charge."
     },
     {
       "id": "GD-008",
@@ -137,7 +144,8 @@
       "gold_answer_contains": [
         "23V858",
         "fuel pump"
-      ]
+      ],
+      "reference_answer": "Yes. Recall 23V858000 covers certain 2013-2023 Honda CR-V vehicles, among other Honda and Acura models, because the fuel pump inside the fuel tank may fail. A failed fuel pump can stall the engine while driving, increasing the risk of a crash. Dealers will replace the fuel pump module free of charge."
     },
     {
       "id": "GD-009",
@@ -154,7 +162,8 @@
       "gold_answer_contains": [
         "26V332",
         "air bag"
-      ]
+      ],
+      "reference_answer": "Recall 26V332000 covers certain 2017-2022 Honda CR-V and 2020-2022 CR-V Hybrid vehicles because the front passenger seat weight sensor may crack and short circuit, which can cause the air bags to deploy unintentionally during a crash. Dealers will replace the seat weight sensors free of charge."
     },
     {
       "id": "GD-010",
@@ -176,7 +185,8 @@
       "gold_answer_contains": [
         "21V586",
         "fuel pump"
-      ]
+      ],
+      "reference_answer": "This matches recall 21V586000, under which the high-pressure fuel pump on the X5 xDrive35d may fail and stall the engine while driving. Complaint 11450849 describes a 2018 X5 that stalled while the recall repair was still pending, because the dealer said parts were not yet available."
     },
     {
       "id": "GD-011",
@@ -198,7 +208,8 @@
       "gold_answer_contains": [
         "24V608",
         "part"
-      ]
+      ],
+      "reference_answer": "Yes. Complaint 11665879 reports the same situation on a 2018 BMW X5: the part for recall 24V608000 was unavailable, and the owner said BMW had exceeded a reasonable time for the repair. That recall covers an improperly sealed water pump electrical connector that can short circuit and increase the risk of a fire."
     },
     {
       "id": "GD-012",
@@ -220,7 +231,8 @@
       "gold_answer_contains": [
         "23V865",
         "air bag"
-      ]
+      ],
+      "reference_answer": "Possibly. Recall 23V865000 covers certain 2020-2022 Camry vehicles whose Occupant Classification System sensor may short circuit and prevent the front passenger air bag from deploying. Complaint 11653764 describes the same pattern: an 'SRS Air Bag Malfunction' warning that the dealer could not duplicate, which the owner linked to recall 23V865000."
     },
     {
       "id": "GD-013",
@@ -236,7 +248,8 @@
       ],
       "gold_answer_contains": [
         "steering"
-      ]
+      ],
+      "reference_answer": "Yes. Complaint 11755012 reports a Honda CR-V whose steering failed to recenter after a sweeping corner and intermittently became heavy and stiff, with no warning lights. The problem was too random for the dealer to reproduce."
     },
     {
       "id": "GD-014",
@@ -252,7 +265,8 @@
       ],
       "gold_answer_contains": [
         "braking"
-      ]
+      ],
+      "reference_answer": "Yes. Complaint 11752320 reports a 2022 Honda CR-V that suddenly 'phantom braked' to an abrupt stop in slow, heavy traffic, nearly causing a rear-end collision. The cause of the braking had not been determined."
     },
     {
       "id": "GD-015",
@@ -268,7 +282,8 @@
       ],
       "gold_answer_contains": [
         "tire"
-      ]
+      ],
+      "reference_answer": "Yes. Complaint 11508100 reports a BMW X5 tire whose tread completely delaminated at highway speed, causing major damage to the left rear of the car."
     },
     {
       "id": "GD-016",
@@ -284,7 +299,8 @@
       ],
       "gold_answer_contains": [
         "transmission"
-      ]
+      ],
+      "reference_answer": "There is at least one such complaint. Complaint 11738027 reports a 2022 Toyota Camry that grinds its gears loudly, hesitates to accelerate and resists shifting; the dealer diagnosed it as needing a new transmission at about 120,000 miles."
     },
     {
       "id": "GD-017",
@@ -300,7 +316,8 @@
       ],
       "gold_answer_contains": [
         "wiper"
-      ]
+      ],
+      "reference_answer": "Yes. Complaint 11744296 reports a Toyota Camry whose wipers turn on by themselves. The dealer could not find a problem and told the owner there were no recalls for it."
     },
     {
       "id": "GD-018",
@@ -316,7 +333,8 @@
       ],
       "gold_answer_contains": [
         "body control module"
-      ]
+      ],
+      "reference_answer": "Yes. Complaint 11731742 reports a sudden, total Body Control Module (BCM) failure on a 2022 Honda CR-V Hybrid: the alarm triggered and could not be silenced, the key fobs stopped working, and all dashboard warning lights came on. The owner notes the symptoms match recall 20V771 for 2018-2020 Honda models, but no recall covers the 2022 CR-V Hybrid."
     },
     {
       "id": "GD-019",
@@ -324,7 +342,8 @@
       "intent": "general_question",
       "vehicle_tag": null,
       "relevant": [],
-      "gold_answer_contains": []
+      "gold_answer_contains": [],
+      "reference_answer": null
     },
     {
       "id": "GD-020",
@@ -332,7 +351,8 @@
       "intent": "general_question",
       "vehicle_tag": null,
       "relevant": [],
-      "gold_answer_contains": []
+      "gold_answer_contains": [],
+      "reference_answer": null
     },
     {
       "id": "GD-021",
@@ -340,7 +360,8 @@
       "intent": "general_question",
       "vehicle_tag": null,
       "relevant": [],
-      "gold_answer_contains": []
+      "gold_answer_contains": [],
+      "reference_answer": null
     },
     {
       "id": "GD-022",
@@ -348,7 +369,8 @@
       "intent": "general_question",
       "vehicle_tag": null,
       "relevant": [],
-      "gold_answer_contains": []
+      "gold_answer_contains": [],
+      "reference_answer": null
     },
     {
       "id": "GD-023",
@@ -356,7 +378,8 @@
       "intent": "general_question",
       "vehicle_tag": null,
       "relevant": [],
-      "gold_answer_contains": []
+      "gold_answer_contains": [],
+      "reference_answer": null
     },
     {
       "id": "GD-024",
@@ -364,7 +387,8 @@
       "intent": "general_question",
       "vehicle_tag": null,
       "relevant": [],
-      "gold_answer_contains": []
+      "gold_answer_contains": [],
+      "reference_answer": null
     }
   ]
 }

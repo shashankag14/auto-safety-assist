@@ -11,8 +11,28 @@ Microservices, each independently deployable:
 - **ingestion** — batch job that pulls NHTSA recall/complaint data ([nhtsa.gov](https://www.nhtsa.gov/), see [NHTSA datasets and APIs](https://www.nhtsa.gov/nhtsa-datasets-and-apis)), chunks it, embeds it, and loads it into Postgres.
 - **intent-classifier** — FastAPI service that classifies whether a query needs the RAG pipeline or is a general question.
 - **retriever** — FastAPI service that performs vector similarity search over embedded NHTSA data (pgvector).
-- **response-generator** — FastAPI service that builds context from retrieved records and generates a cited LLM response.
-- **pipeline** — thin orchestrator that calls the services in sequence: ingest → classify intent → retrieve → generate.
+- **response-generator** — FastAPI service that builds context from retrieved records and generates a cited LLM response (`/generate`), or answers from general knowledge when there are no records (`/answer`).
+- **pipeline** — thin orchestrator that calls the services in sequence: ingest → classify intent → retrieve → generate, routing to `/answer` when no retrieval is needed.
+
+### Request flow
+
+```mermaid
+---
+config:
+  theme: base
+---
+flowchart TB
+    Q(["User query"]) --> C["Intent classifier<br>/classify"]
+    C -- general_question --> A["Response generator<br>/answer<br>general knowledge, no IDs"]
+    C -- recall_lookup /<br>complaint_search --> R["Retriever<br>/retrieve"]
+    C -. null: output unparsed<br>run RAG anyway .-> R
+    R -- "top-k candidates" --> G["Response generator<br>/generate<br>answers from context, cites IDs"]
+    R -. 404: no matches .-> A
+    A --> OUT(["Response"])
+    G --> OUT
+```
+
+Dashed arrows are fallbacks. If the classifier can't parse the model's output, the query still goes through retrieval. If retrieval finds no matching records, the query is answered from general knowledge without citing recall or complaint IDs. Source: [docs/diagrams/pipeline-flow.mmd](docs/diagrams/pipeline-flow.mmd).
 
 ## Tech Stack
 

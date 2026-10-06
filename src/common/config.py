@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from dotenv import load_dotenv
+from loguru import logger
 
 load_dotenv()
 
@@ -34,10 +35,28 @@ def get_postgres_config() -> PostgresConfig:
 
 class AvailableModels(StrEnum):
     """
-    Defines the set of OpenAI models allowed for intent classification.
+    Defines the set of OpenAI models allowed for intent classification and response generation.
     """
     GPT_4O_MINI = "gpt-4o-mini"
     GPT_4_1_MINI = "gpt-4.1-mini"
+
+
+DEFAULT_OPENAI_MODEL = AvailableModels.GPT_4O_MINI
+
+
+def get_default_openai_model() -> AvailableModels:
+    """
+    Reads OPENAI_MODEL, falling back to DEFAULT_OPENAI_MODEL if it is not one of the AvailableModels.
+    """
+    model = os.environ.get("OPENAI_MODEL", DEFAULT_OPENAI_MODEL.value)
+    try:
+        return AvailableModels(model)
+    except ValueError:
+        logger.warning(
+            f"OPENAI_MODEL='{model}' is not a supported model "
+            f"({[m.value for m in AvailableModels]}). Falling back to '{DEFAULT_OPENAI_MODEL.value}'."
+        )
+        return DEFAULT_OPENAI_MODEL
 
 
 @dataclass(frozen=True)

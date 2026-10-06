@@ -30,7 +30,8 @@ from openai import OpenAI
 from pydantic import BaseModel
 
 from src.common.config import get_response_generator_config, get_retriever_config
-from src.services.response_generator.generator import Candidates, build_context, generator_api
+from src.common.schemas import Candidates
+from src.services.response_generator.generator import build_context, generator_api
 
 DATASET_PATH = Path(__file__).parent / "golden_dataset.json"
 

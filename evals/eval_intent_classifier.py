@@ -11,7 +11,8 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from loguru import logger
 
-from src.services.intent_classifier.classifier import Intent, classifier_api
+from src.services.intent_classifier.classifier import classifier_api
+from src.services.intent_classifier.schemas import Intent
 
 DATASET_PATH = Path(__file__).parent / "golden_dataset.json"
 INTENTS = [i.value for i in Intent]

@@ -1,6 +1,5 @@
 from contextlib import closing
 from pathlib import Path
-from typing import Annotated
 
 # api service
 from fastapi import FastAPI, HTTPException, status
@@ -8,14 +7,15 @@ from loguru import logger
 
 # postgres and pgvector imports
 from pgvector import Vector
-from pydantic import BaseModel, Field
 
 from src.common.config import get_postgres_config, get_retriever_config
 
 # local packages
 from src.common.db import get_connection
 from src.common.embeddings import get_embedding_model
+from src.common.schemas import Candidates
 from src.common.utils import load_sql_query
+from src.services.retriever.schemas import DatabaseDetails, HealthResponse, RetrieverRequest, RetrieverResponse
 
 # load retriever config parameters (api server, top_k etc)
 cfg = get_retriever_config()
@@ -32,48 +32,6 @@ VECTOR_SEARCH_QUERY = load_sql_query("vector_search.sql", QUERIES_DIR)
 retriever_api = FastAPI(title="Retreiver",
                         version="0.1.0",
                         summary="Retrives top matching candidates from recall/complaints against the user input query.")
-
-
-class Candidates(BaseModel):
-    """
-    Defines the schema for the candidates provided as an input to the response generator.
-    Each candidate should have the following fields listed below.
-
-    (Refer the SQL database table definitions as a reference to declare the datatypes)
-    """
-    source: Annotated[str, Field(description="The source of the candidate")]
-    id: Annotated[int, Field(description="The internal database ID of the candidate")]
-    external_id: Annotated[str, Field(description="The NHTSA campaign number (recall) or ODI number "
-                                       "(complaint) -- the ID citable to the end user")]
-    vehicle_tag: Annotated[str, Field(description="The vehicle tag of the candidate")]
-    text: Annotated[str, Field(description="The text of the candidate")]
-    cosine_sim: Annotated[float, Field(description="The cosine similarity of the candidate", gt=0, le=1)]
-
-
-class RetrieverRequest(BaseModel):
-    """
-    Defines the request body for the retriever endpoint.
-    """
-    query: Annotated[str, Field(description="The query to retrieve candidates for", min_length=10, max_length=300)]
-
-
-class RetrieverResponse(BaseModel):
-    """
-    Defines the response body for the retriever endpoint.
-    """
-    candidates: Annotated[list[Candidates],
-                          Field(description="The candidates to use for response generation",
-                                min_length=1, max_length=10)]
-
-class HealthResponse(BaseModel):
-    status: str
-
-class DatabaseDetails(BaseModel):
-    """
-    Defines the response body for the database_details endpoint.
-    """
-    recalls_count: Annotated[int, Field(description="The number of recalls in the database")]
-    complaints_count: Annotated[int, Field(description="The number of complaints in the database")]
 
 
 @retriever_api.post(path="/retrieve",

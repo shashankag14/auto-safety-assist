@@ -1,73 +1,21 @@
-# logging
-from typing import Annotated
-
 from fastapi import FastAPI, HTTPException, status
+
+# logging
 from loguru import logger
 
 # openai imports
 from openai import OpenAI, OpenAIError
 
-# api service
-from pydantic import BaseModel, Field
-
 # local packages
-from src.common.config import AvailableModels, get_response_generator_config
-
-DEFAULT_MODEL = AvailableModels.GPT_4O_MINI
+from src.common.config import get_response_generator_config
+from src.common.schemas import Candidates
+from src.services.response_generator.schemas import GenerateResponse, GenerateResponseRequest, HealthResponse
 
 cfg = get_response_generator_config()
 
 client = OpenAI(api_key=cfg.openai_api_key)
 
 generator_api = FastAPI(title="Response Generator", description="Generate a response to a query", version="0.1.0")
-
-
-def _get_default_model() -> AvailableModels:
-    try:
-        return AvailableModels(cfg.model)
-    except ValueError:
-        logger.warning(f"OPENAI_MODEL='{cfg.model}' is not a supported model ({[m.value for m in AvailableModels]}). \
-                       Falling back to '{DEFAULT_MODEL.value}'")
-        return DEFAULT_MODEL
-
-
-class Candidates(BaseModel):
-    """
-    Defines the schema for the candidates provided as an input to the response generator.
-    Each candidate should have the following fields listed below.
-
-    (Refer the SQL database table definitions as a reference to declare the datatypes)
-    """
-    source: Annotated[str, Field(description="The source of the candidate")]
-    id: Annotated[int, Field(description="The internal database ID of the candidate")]
-    external_id: Annotated[str, Field(description="The NHTSA campaign number (recall) or ODI number "
-                                       "(complaint) -- the ID citable to the end user")]
-    vehicle_tag: Annotated[str, Field(description="The vehicle tag of the candidate")]
-    text: Annotated[str, Field(description="The text of the candidate")]
-    cosine_sim: Annotated[float, Field(description="The cosine similarity of the candidate", gt=0, le=1)]
-
-
-class GenerateResponseRequest(BaseModel):
-    """
-    Defines the request body for the generate_response endpoint.
-    """
-    query: Annotated[str, Field(description="The query to generate a response for", min_length=10, max_length=300)]
-    candidates: Annotated[list[Candidates], Field(description="The candidates to use for response generation",
-                                                  min_length=1, max_length=10)]
-    model: Annotated[
-        AvailableModels, Field(description="The model to use for response generation")
-    ] = _get_default_model()
-
-
-class GenerateResponse(BaseModel):
-    """
-    Defines the response body for the generate_response endpoint.
-    """
-    response: str
-
-
-class HealthResponse(BaseModel):
-    status: str
 
 
 def build_context(candidates: list[Candidates]) -> str:

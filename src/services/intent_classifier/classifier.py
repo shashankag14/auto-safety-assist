@@ -1,18 +1,16 @@
-from enum import StrEnum
-from typing import Annotated
-
 from fastapi import FastAPI, HTTPException, status
 from loguru import logger
 
 # openai imports
 from openai import OpenAI, OpenAIError
 
-# api service
-from pydantic import BaseModel, Field
-
-from src.common.config import AvailableModels, get_classifier_config
-
-DEFAULT_MODEL = AvailableModels.GPT_4O_MINI
+from src.common.config import get_classifier_config
+from src.services.intent_classifier.schemas import (
+    ClassifyIntentRequest,
+    ClassifyIntentResponse,
+    HealthResponse,
+    IntentOutput,
+)
 
 cfg = get_classifier_config()
 
@@ -21,51 +19,12 @@ client = OpenAI(api_key=cfg.openai_api_key)
 classifier_api = FastAPI(title="Intent Classifier", description="Classify the intent of a query", version="0.1.0")
 
 
-def _get_default_model() -> AvailableModels:
-    try:
-        return AvailableModels(cfg.model)
-    except ValueError:
-        logger.warning(
-            f"OPENAI_MODEL='{cfg.model}' is not a supported classifier model "
-            f"({[m.value for m in AvailableModels]}). Falling back to '{DEFAULT_MODEL.value}'."
-        )
-        return DEFAULT_MODEL
-
-
-class Intent(StrEnum):
-    """
-    Defines the intents that can be classified by the intent classification model.
-    """
-    RECALL_LOOKUP = "recall_lookup"
-    COMPLAINT_SEARCH = "complaint_search"
-    GENERAL_QUESTION = "general_question"
-
-
-class ClassifyIntentResponse(BaseModel):
-    """
-    Defines the structure of the intent classification result by the intent classification model.
-    """
-    # for structured output
-    intent: Intent
-
-
-class ClassifyIntentRequest(BaseModel):
-    """
-    Defines the request body for the classify_intent endpoint.
-    """
-    query: Annotated[str, Field(description="The query to classify", min_length=10, max_length=300)]
-    model: Annotated[AvailableModels, Field(description="The model to use for classification")] = _get_default_model()
-
-
-class HealthResponse(BaseModel):
-    status: str
-
-
 @classifier_api.post(path="/classify",
                     response_model=ClassifyIntentResponse,
                     summary="Classify the intent of a query",
                     response_description="The intent of the query. " \
-                    "One of the following: RECALL_LOOKUP, COMPLAINT_SEARCH, GENERAL_QUESTION",
+                    "One of the following: RECALL_LOOKUP, COMPLAINT_SEARCH, GENERAL_QUESTION, " \
+                    "or null if the model output could not be parsed",
                     responses={
                         status.HTTP_500_INTERNAL_SERVER_ERROR: {
                             "description": "Failed to parse the intent classification response from the model",
@@ -88,19 +47,19 @@ def classify_intent(req: ClassifyIntentRequest) -> ClassifyIntentResponse:
             model=req.model,
             instructions=cfg.instructions,
             input=query,
-            text_format=ClassifyIntentResponse,
+            text_format=IntentOutput,
         )
     except OpenAIError as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Failed to parse intent") from e
 
-    # Check if output_parsed is None before accessing its attributes
+    # output_parsed is None when the model refuses or the output is truncated. Return null instead of
+    # guessing an intent, so callers can choose a safe route and evals can count it separately.
     if response and response.output_parsed:
-        return response.output_parsed
+        return ClassifyIntentResponse(intent=response.output_parsed.intent)
 
-    else:
-        logger.warning(f"Failed to parse intent for query: '{query}'. Falling back to GENERAL_QUESTION.")
-        return ClassifyIntentResponse(intent=Intent.GENERAL_QUESTION)
+    logger.warning(f"Failed to parse intent for query: '{query}'. Returning null intent.")
+    return ClassifyIntentResponse(intent=None)
 
 
 @classifier_api.get(path="/healthz",

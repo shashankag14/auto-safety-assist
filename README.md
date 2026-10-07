@@ -11,8 +11,28 @@ Microservices, each independently deployable:
 - **ingestion** — batch job that pulls NHTSA recall/complaint data ([nhtsa.gov](https://www.nhtsa.gov/), see [NHTSA datasets and APIs](https://www.nhtsa.gov/nhtsa-datasets-and-apis)), chunks it, embeds it, and loads it into Postgres.
 - **intent-classifier** — FastAPI service that classifies whether a query needs the RAG pipeline or is a general question.
 - **retriever** — FastAPI service that performs vector similarity search over embedded NHTSA data (pgvector).
-- **response-generator** — FastAPI service that builds context from retrieved records and generates a cited LLM response.
-- **pipeline** — thin orchestrator that calls the services in sequence: ingest → classify intent → retrieve → generate.
+- **response-generator** — FastAPI service that builds context from retrieved records and generates a cited LLM response (`/generate`), or answers from general knowledge when there are no records (`/answer`).
+- **pipeline** — thin orchestrator that calls the services in sequence: ingest → classify intent → retrieve → generate, routing to `/answer` when no retrieval is needed.
+
+### Request flow
+
+```mermaid
+---
+config:
+  theme: base
+---
+flowchart TB
+    Q(["User query"]) --> C["Intent classifier<br>/classify"]
+    C -- general_question --> A["Response generator<br>/answer<br>general knowledge, no IDs"]
+    C -- recall_lookup /<br>complaint_search --> R["Retriever<br>/retrieve"]
+    C -. null: output unparsed<br>run RAG anyway .-> R
+    R -- "top-k candidates" --> G["Response generator<br>/generate<br>answers from context, cites IDs"]
+    R -. 404: no matches .-> A
+    A --> OUT(["Response"])
+    G --> OUT
+```
+
+Dashed arrows are fallbacks. If the classifier can't parse the model's output, the query still goes through retrieval. If retrieval finds no matching records, the query is answered from general knowledge without citing recall or complaint IDs. Source: [docs/diagrams/pipeline-flow.mmd](docs/diagrams/pipeline-flow.mmd).
 
 ## Tech Stack
 
@@ -30,3 +50,33 @@ Microservices, each independently deployable:
 - **Testing:** pytest
 - **Linting:** ruff
 - **CI/CD:** GitHub Actions (lint, test, build & push each service's image to GHCR)
+
+## Running Locally
+
+Requires Docker + Docker Compose, and a `.env` file at the repo root with your Postgres and OpenAI credentials (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `DATABASE_NAME`, `OPENAI_API_KEY`, etc. — see `src/common/config.py` for the full list of env vars each service reads).
+
+### 1. Ingest data
+
+Pulls recall/complaint data from NHTSA, embeds it, and loads it into Postgres. The `ingestion` service is compose-profiled so it doesn't run on every `up` — invoke it explicitly as a one-off job:
+
+```bash
+docker compose --profile jobs run --rm ingestion
+```
+
+This starts Postgres (if not already running) and runs the ingestion + indexing pipeline once, then exits.
+
+### 2. Run the services
+
+```bash
+docker compose up
+```
+
+Starts Postgres and the three FastAPI services:
+
+| Service | Port | Docs |
+|---|---|---|
+| intent-classifier | 8000 | http://localhost:8000/docs |
+| retriever | 8001 | http://localhost:8001/docs |
+| response-generator | 8002 | http://localhost:8002/docs |
+
+Each service exposes a `/healthz` endpoint you can hit to confirm it's up, and interactive Swagger docs at `/docs`.

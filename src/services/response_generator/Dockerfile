@@ -17,6 +17,7 @@ RUN uv sync --frozen --no-dev --no-install-project --group response-generator
 
 COPY /src/services/response_generator /app/src/services/response_generator
 COPY /src/common/config.py /app/src/common/config.py
+COPY /src/common/schemas.py /app/src/common/schemas.py
 
 RUN uv sync --frozen --no-dev --group response-generator
 

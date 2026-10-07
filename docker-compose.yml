@@ -29,6 +29,8 @@ services:
       - .env
     volumes:
       - ./data:/app/data
+      - ./src/ingestion:/app/src/ingestion
+      - ./src/common:/app/src/common
 
   intent-classifier:
     build:
@@ -71,6 +73,7 @@ services:
     volumes:
       - ./src/services/response_generator:/app/src/services/response_generator
       - ./src/common/config.py:/app/src/common/config.py
+      - ./src/common/schemas.py:/app/src/common/schemas.py
     env_file:
       - .env
 

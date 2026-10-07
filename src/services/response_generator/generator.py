@@ -64,6 +64,7 @@ def generate_response(req: GenerateResponseRequest) -> GenerateResponse:
             model=model,
             instructions=cfg.instructions,
             input=input_text,
+            temperature=cfg.temperature,
         )
     except OpenAIError as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -95,6 +96,7 @@ def answer(req: AnswerRequest) -> GenerateResponse:
             model=req.model,
             instructions=cfg.general_instructions,
             input=req.query,
+            temperature=cfg.temperature,
         )
     except OpenAIError as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -111,6 +111,8 @@ class ResponseGeneratorConfig:
     model: str
     instructions: str
     general_instructions: str
+    # low temperature keeps grounded answers consistent: the same context should yield the same facts
+    temperature: float
 
 RESPONSE_GENERATOR_INSTRUCTIONS = """You are a vehicle safety assistant. Answer the user's question using ONLY the
 provided context of NHTSA recalls and owner complaints. Cite the source (recall or complaint) and
@@ -140,6 +142,7 @@ def get_response_generator_config() -> ResponseGeneratorConfig:
         model=os.environ.get("OPENAI_MODEL", "gpt-4o-mini"),
         instructions=RESPONSE_GENERATOR_INSTRUCTIONS,
         general_instructions=GENERAL_ANSWER_INSTRUCTIONS,
+        temperature=float(os.environ.get("GENERATOR_TEMPERATURE", "0")),
     )
 
 

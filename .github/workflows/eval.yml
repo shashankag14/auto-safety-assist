@@ -18,8 +18,8 @@ on:
       - ".github/workflows/eval.yml"
   workflow_dispatch:
   schedule:
-    # weekly, catches model drift behind an unchanged model name
-    - cron: "0 6 * * 1"
+    # monthly (06:00 UTC on the 1st), catches model drift behind an unchanged model name
+    - cron: "0 6 1 * *"
 
 # a new push to the same PR cancels the in-flight run instead of paying for both
 concurrency:

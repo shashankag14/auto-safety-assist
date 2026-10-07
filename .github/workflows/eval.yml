@@ -1,0 +1,141 @@
+name: Eval regression gate
+
+# Costs due to OpenAI API usage and slow, so it only runs when answer quality can actually change,
+# unlike ci.yml which runs lint/tests/builds on every push.
+on:
+  pull_request:
+    # only run when the PR is against main
+    branches: [main]
+    # only run when files that could affect the evals have changed
+    paths:
+      - "src/common/**"
+      - "src/ingestion/**"
+      - "src/services/retriever/**"
+      - "src/services/response_generator/**"
+      - "evals/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/eval.yml"
+  workflow_dispatch:
+  schedule:
+    # monthly (06:00 UTC on the 1st), catches model drift behind an unchanged model name
+    - cron: "0 6 1 * *"
+
+# a new push to the same PR cancels the in-flight run instead of paying for both
+concurrency:
+  # group name includes the branch name so that multiple PRs can run in parallel
+  group: eval-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  # read only access to the repo is enough for this workflow
+  contents: read
+
+jobs:
+  ragas-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      # throwaway DB that lives only for this job, so a hard coded password is fine here
+      postgres:
+        image: pgvector/pgvector:pg18
+        env:
+          POSTGRES_USER: eval
+          POSTGRES_PASSWORD: eval
+          POSTGRES_DB: nhtsa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U eval -d nhtsa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      POSTGRES_USER: eval
+      POSTGRES_PASSWORD: eval
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      DATABASE_NAME: nhtsa
+      SERVICE_HOST: localhost
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          python-version: "3.11"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-groups --frozen
+
+      - name: Cache embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-all-MiniLM-L6-v2
+
+      # Pull the pinned data snapshot. 
+      # TODO: Swap this copy for `aws s3 cp` from a versioned bucket via GitHub OIDC; everything after this step stays the same.
+      - name: Stage pinned data snapshot
+        run: |
+          mkdir -p data
+          cp evals/fixtures/nhtsa_snapshot/recalls.json evals/fixtures/nhtsa_snapshot/complaints.json data/
+          expected=$(jq -r .snapshot_id evals/fixtures/nhtsa_snapshot/manifest.json)
+          actual=$(uv run python -m evals.snapshot)
+          echo "snapshot expected=$expected actual=$actual"
+          test "$expected" = "$actual"
+
+      - name: Build index
+        run: uv run python -m src.ingestion.build_index
+
+      - name: Start retriever
+      # Retriever service is started in the background, we wait for it to become healthy before proceeding
+      # Its log goes to RUNNER_TEMP (outside the repo) so the checkout stays clean and git_commit isn't marked "-dirty"
+        run: |
+          nohup uv run uvicorn src.services.retriever.retriever:retriever_api --port 8001 > "$RUNNER_TEMP/retriever.log" 2>&1 &
+          for _ in $(seq 1 60); do
+            curl -sf http://localhost:8001/healthz && exit 0
+            sleep 2
+          done
+          echo "retriever did not become healthy"; cat "$RUNNER_TEMP/retriever.log"; exit 1
+
+      - name: Generate samples
+      # Generate samples for the RAGAS regression gate. This is a slow step that uses the OpenAI API, so it is only run when the PR changes code that could affect the evals.
+        run: uv run python -m evals.generate_ragas_samples
+
+      - name: Score samples
+      # Score the generated samples for the RAGAS regression gate. This is a slow step that uses the OpenAI API, so it is only run when the PR changes code that could affect the evals.
+        run: uv run --group eval python -m evals.eval_ragas --no-cache
+
+      - name: Regression gate
+      # Compare the scores of the generated samples to the pinned scores for the RAGAS regression gate.
+        run: |
+          # without pipefail the step would report tee's exit code (0) and the gate could never fail
+          set -o pipefail
+          uv run python -m evals.compare_ragas check | tee "$RUNNER_TEMP/gate.txt"
+
+      - name: Job summary
+      # Append the RAGAS regression gate results to the PR UI.
+        if: always()
+        run: |
+          echo '### RAGAS regression gate' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat "$RUNNER_TEMP/gate.txt" >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "gate did not run" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload eval results
+      # Upload the RAGAS regression gate results to the workflow artifacts so that they can be downloaded and inspected if the gate fails.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results-${{ github.run_id }}
+          path: |
+            evals/results/
+            ${{ runner.temp }}/retriever.log
+          retention-days: 30

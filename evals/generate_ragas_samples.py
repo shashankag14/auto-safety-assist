@@ -26,7 +26,8 @@ from pathlib import Path
 from loguru import logger
 
 from evals.eval_response_generator import generate, load_examples, retrieve
-from src.common.config import get_default_openai_model, get_retriever_config
+from evals.snapshot import snapshot_id
+from src.common.config import get_default_openai_model, get_response_generator_config, get_retriever_config
 from src.services.response_generator.generator import Candidates, build_context
 
 RESULTS_DIR = Path(__file__).parent / "results"
@@ -75,7 +76,10 @@ def main() -> None:
         "run_metadata": {
             "created_at": started_at.isoformat(timespec="seconds"),
             "git_commit": git_commit(),
+            # the index the retriever searches is built from data/, so this pins the data version
+            "data_snapshot": snapshot_id(),
             "generator_model": get_default_openai_model().value,
+            "generator_temperature": get_response_generator_config().temperature,
             "retriever_top_k": get_retriever_config().top_k,
             "num_samples": len(samples),
             "num_unanswered": sum(s["response"] is None for s in samples),

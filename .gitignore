@@ -221,3 +221,5 @@ __marimo__/
 resources/
 data/
 plan/
+evals/results/
+docs/todo.md

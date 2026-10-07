@@ -20,6 +20,10 @@ Scoring never calls the pipeline, so judges/metrics can be changed and rerun
 against the exact same answers. Judge LLM and embedding calls are cached on
 disk (.cache/ragas), so rescoring an unchanged sample costs nothing.
 
+The cache also hides the judge's own run-to-run variation: identical inputs always
+get the first verdict back. Use --no-cache when measuring variation, building the
+baseline, and in CI (which has no cache), so the tolerance reflects real judge noise.
+
 Requires:
     - a real OPENAI_API_KEY in .env
     - the eval dependency group: uv sync --group eval
@@ -27,8 +31,10 @@ Requires:
 Run from the repo root (defaults to the newest samples file in evals/results/):
     uv run --group eval python -m evals.eval_ragas
     uv run --group eval python -m evals.eval_ragas evals/results/ragas_samples_<timestamp>.json
+    uv run --group eval python -m evals.eval_ragas --no-cache
 """
 
+import argparse
 import asyncio
 import json
 import statistics
@@ -71,12 +77,12 @@ METRIC_INPUTS = {
 }
 
 
-def build_metrics() -> dict:
+def build_metrics(use_cache: bool = True) -> dict:
     # create a single AsyncOpenAI client to share across all metrics, so we don't hit the rate limit
     client = AsyncOpenAI(api_key=get_response_generator_config().openai_api_key)
 
     # create a cache backend so repeated calls to the same judge/embedding don't cost money
-    cache = DiskCacheBackend(cache_dir=str(CACHE_DIR))
+    cache = DiskCacheBackend(cache_dir=str(CACHE_DIR)) if use_cache else None
 
     # create a judge LLM and an embedding model for the metrics to use
     judge = llm_factory(JUDGE_MODEL, client=client, cache=cache, temperature=0)
@@ -161,19 +167,25 @@ def print_report(samples_path: Path, num_skipped: int, results: list[dict], summ
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Score saved RAGAS samples")
+    parser.add_argument("samples_file", nargs="?", type=Path, help="defaults to the newest file in evals/results/")
+    parser.add_argument("--no-cache", action="store_true", help="call the judge fresh, not reusing cached verdicts")
+    args = parser.parse_args()
+    use_cache = not args.no_cache
+
     logger.info(
         f"Running RAGAS scoring with judge={JUDGE_MODEL} embedding={EMBEDDING_MODEL} "
-        f"max_concurrent={MAX_CONCURRENT_SCORES}"
+        f"max_concurrent={MAX_CONCURRENT_SCORES} cache={use_cache}"
     )
 
-    samples_path = Path(sys.argv[1]) if len(sys.argv) > 1 else latest_samples_file()
+    samples_path = args.samples_file or latest_samples_file()
     logger.debug(f"Loading dataset samples from {samples_path}")
     run = json.loads(samples_path.read_text(encoding="utf-8"))
     samples = run["samples"]
 
     logger.debug(f"Scoring {len(samples)} samples from {samples_path.name} (skipping unanswered)...")
     started_at = datetime.now(UTC)
-    results = asyncio.run(score_samples(samples, build_metrics()))
+    results = asyncio.run(score_samples(samples, build_metrics(use_cache)))
     summary = summarize(results)
     num_skipped = len(samples) - len(results)
 
@@ -188,6 +200,7 @@ def main() -> None:
             "judge_model": JUDGE_MODEL,
             "embedding_model": EMBEDDING_MODEL,
             "factual_correctness_mode": FACTUAL_CORRECTNESS_MODE,
+            "judge_cache": use_cache,
             "num_scored": len(results),
             "num_skipped": num_skipped,
         },

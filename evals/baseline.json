@@ -1,0 +1,61 @@
+{
+  "created_at": "2026-10-07T20:21:09+00:00",
+  "setup": {
+    "ragas_version": "0.4.3",
+    "judge_model": "gpt-4.1-mini",
+    "embedding_model": "text-embedding-3-small",
+    "factual_correctness_mode": "recall"
+  },
+  "generator": {
+    "generator_model": "gpt-4o-mini",
+    "generator_temperature": 0.0,
+    "retriever_top_k": 5
+  },
+  "num_samples": 18,
+  "source_runs": [
+    "ragas_scores_20261007T201659Z.json",
+    "ragas_scores_20261007T201324Z.json"
+  ],
+  "metrics": {
+    "faithfulness": {
+      "mean": 0.989,
+      "stdev": 0.0,
+      "min": 0.989,
+      "max": 0.989,
+      "tolerance": 0.03,
+      "gated": true
+    },
+    "factual_correctness": {
+      "mean": 0.48,
+      "stdev": 0.005,
+      "min": 0.477,
+      "max": 0.484,
+      "tolerance": 0.03,
+      "gated": true
+    },
+    "context_precision": {
+      "mean": 0.827,
+      "stdev": 0.002,
+      "min": 0.825,
+      "max": 0.828,
+      "tolerance": 0.03,
+      "gated": true
+    },
+    "context_recall": {
+      "mean": 0.865,
+      "stdev": 0.013,
+      "min": 0.856,
+      "max": 0.875,
+      "tolerance": 0.03,
+      "gated": true
+    },
+    "answer_relevancy": {
+      "mean": 0.833,
+      "stdev": 0.004,
+      "min": 0.831,
+      "max": 0.836,
+      "tolerance": 0.03,
+      "gated": false
+    }
+  }
+}

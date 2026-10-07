@@ -63,6 +63,11 @@ def generator_setup(run: dict) -> dict:
     return {key: samples_meta.get(key) for key in ("generator_model", "generator_temperature", "retriever_top_k")}
 
 
+def data_snapshot(run: dict) -> str | None:
+    """Content ID of the data the index was built from (see evals/snapshot.py)."""
+    return run["run_metadata"]["samples_run_metadata"].get("data_snapshot")
+
+
 def build_baseline(paths: list[Path]) -> None:
     if len(paths) < 2:
         sys.exit("A baseline needs at least 2 runs to measure run-to-run variation (3+ recommended)")
@@ -81,6 +86,10 @@ def build_baseline(paths: list[Path]) -> None:
     generators = {json.dumps(generator_setup(r), sort_keys=True) for r in runs}
     if len(generators) > 1:
         sys.exit(f"Runs used different generator settings and can't be combined: {generators}")
+
+    snapshots = {data_snapshot(r) for r in runs}
+    if len(snapshots) > 1 or None in snapshots:
+        sys.exit(f"Runs must share one recorded data snapshot; found {snapshots}")
 
     metrics = {}
     for name in GATED_METRICS + REPORT_ONLY_METRICS:
@@ -102,6 +111,7 @@ def build_baseline(paths: list[Path]) -> None:
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "setup": comparability(runs[0]),
         "generator": generator_setup(runs[0]),
+        "data_snapshot": data_snapshot(runs[0]),
         "num_samples": runs[0]["run_metadata"]["num_scored"],
         "source_runs": [p.name for p in paths],
         "metrics": metrics,
@@ -125,6 +135,14 @@ def check(path: Path) -> int:
 
     if comparability(run) != baseline["setup"]:
         problems.append(f"setup differs from baseline: run={comparability(run)} baseline={baseline['setup']}")
+
+    # generator/model changes are what the gate exists to judge, but different data makes the
+    # golden labels (and so the scores) incomparable - that needs a new baseline, not a verdict
+    if data_snapshot(run) != baseline.get("data_snapshot"):
+        problems.append(
+            f"data snapshot differs from baseline: run={data_snapshot(run)} baseline={baseline.get('data_snapshot')} "
+            "- rebuild the baseline after refreshing data"
+        )
 
     print(f"Checking {path.name} against baseline ({', '.join(baseline['source_runs'])})\n")
     print(f"{'metric':<22}{'baseline':>10}{'run':>8}{'delta':>8}{'allowed':>9}  result")

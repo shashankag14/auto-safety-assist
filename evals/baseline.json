@@ -11,6 +11,7 @@
     "generator_temperature": 0.0,
     "retriever_top_k": 5
   },
+  "data_snapshot": "sha256:f386bda9eb2d4fc9",
   "num_samples": 18,
   "source_runs": [
     "ragas_scores_20261007T201659Z.json",

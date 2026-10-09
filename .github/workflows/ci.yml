@@ -32,6 +32,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     strategy:
       matrix:
@@ -42,6 +43,8 @@ jobs:
             dockerfile: src/services/retriever/Dockerfile
           - service: response-generator
             dockerfile: src/services/response_generator/Dockerfile
+          - service: ingestion
+            dockerfile: src/ingestion/Dockerfile
 
     steps:
       - name: Checkout
@@ -53,6 +56,17 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS Credentials for US East-1
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        if: github.ref == 'refs/heads/main'
+        with:
+          role-to-assume: ${{ vars.AWS_ECR_PUSH_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Login to AWS ECR
+        uses: aws-actions/amazon-ecr-login@v2.1.7
+        if: github.ref == 'refs/heads/main'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4.2.0
@@ -67,5 +81,6 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
             ghcr.io/${{ github.repository }}/${{ matrix.service }}:latest
+            ${{ vars.ECR_REGISTRY }}/auto-safety-assist/${{ matrix.service }}:${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}

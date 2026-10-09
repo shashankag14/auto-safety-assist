@@ -30,6 +30,8 @@ concurrency:
 permissions:
   # read only access to the repo is enough for this workflow
   contents: read
+  # write access to OIDC token is needed to assume the eval role and pull the pinned data snapshot from S3 Bucket
+  id-token: write
 
 jobs:
   ragas-gate:
@@ -80,13 +82,19 @@ jobs:
           path: ~/.cache/huggingface
           key: hf-all-MiniLM-L6-v2
 
-      # Pull the pinned data snapshot. 
-      # TODO: Swap this copy for `aws s3 cp` from a versioned bucket via GitHub OIDC; everything after this step stays the same.
+      - name: Login to AWS and assume eval role
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_EVAL_ROLE_ARN }}
+          aws-region: us-east-1
+
+      # Pull the pinned data snapshot and verify that the snapshot ID matches the pinned snapshot ID in the manifest. This ensures that the evals are run against a known, stable dataset.
       - name: Stage pinned data snapshot
         run: |
-          mkdir -p data
-          cp evals/fixtures/nhtsa_snapshot/recalls.json evals/fixtures/nhtsa_snapshot/complaints.json data/
           expected=$(jq -r .snapshot_id evals/fixtures/nhtsa_snapshot/manifest.json)
+          mkdir -p data
+          aws s3 cp "s3://${{ vars.EVAL_SNAPSHOT_BUCKET }}/nhtsa_snapshot/$expected/recalls.json" data/ --no-progress
+          aws s3 cp "s3://${{ vars.EVAL_SNAPSHOT_BUCKET }}/nhtsa_snapshot/$expected/complaints.json" data/ --no-progress
           actual=$(uv run python -m evals.snapshot)
           echo "snapshot expected=$expected actual=$actual"
           test "$expected" = "$actual"

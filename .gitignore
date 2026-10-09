@@ -217,6 +217,10 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# Evals
+evals/fixtures/nhtsa_snapshot/*.json
+!evals/fixtures/nhtsa_snapshot/manifest.json
+
 .vscode
 resources/
 data/

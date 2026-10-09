@@ -59,12 +59,12 @@ flowchart LR
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"fontFamily":"Inter, Segoe UI, Helvetica, Arial, sans-serif","fontSize":"15px","lineColor":"#64748b","primaryTextColor":"#0f172a","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":40,"rankSpacing":55,"padding":16}}}%%
 flowchart LR
-    fixture[/"Pinned data snapshot<br/>evals/fixtures"/]:::input
+    fixture[/"Pinned data snapshot<br/>S3 · ID pinned in manifest.json"/]:::input
 
     subgraph prepare["Prepare · no API cost"]
         direction TB
         setup["① Checkout + install<br/>uv sync --frozen"]:::step
-        stage["② Stage data<br/>copy fixture · verify snapshot ID"]:::step
+        stage["② Stage data<br/>AWS login via OIDC · download from S3<br/>verify snapshot ID"]:::step
         index["③ Build index<br/>embed → pgvector service"]:::step
         retr["④ Start retriever<br/>wait for /healthz"]:::step
         setup --> stage --> index --> retr
@@ -101,6 +101,8 @@ flowchart LR
 ```
 
 **Prepare** builds a throwaway copy of the system inside the runner. Postgres runs as a service container that only lives for this job. The data comes from the pinned snapshot, never the live NHTSA API, and the job stops if its ID doesn't match the manifest.
+
+The snapshot files live in S3, one folder per snapshot ID. The job logs in to AWS with GitHub OIDC: GitHub issues a short-lived token, and AWS swaps it for temporary credentials for a role that only this repo can assume and that can only read the snapshot folder. No AWS keys are stored in GitHub. The role ARN and bucket name are repository variables (`AWS_EVAL_ROLE_ARN`, `EVAL_SNAPSHOT_BUCKET`). The IAM policies are in [`infra/aws/iam/`](../infra/aws/iam/), and the steps for publishing a new snapshot are in [evals/README.md](../evals/README.md#refreshing-the-snapshot).
 
 **Evaluate** generates fresh answers for the 18 retrieval questions in the golden dataset and scores them with RAGAS. The judge cache is off, because the baseline's tolerances were measured without it.
 

@@ -339,6 +339,42 @@ Faithfulness, factual correctness, context precision and context recall are gate
 
 **Rebuild the baseline when the golden dataset changes.** The gate doesn't track `golden_dataset.json`. A new or edited `reference_answer` changes what the reference-based metrics measure, so a check against an older baseline compares different things.
 
+## Data snapshot
+
+The gate runs on a frozen copy of the NHTSA data, so scores only change when code or models change. `snapshot.py` fingerprints the data as `sha256:<16 hex chars>`, and `fixtures/nhtsa_snapshot/manifest.json` pins the ID the evals expect.
+
+| Where | What |
+|---|---|
+| `fixtures/nhtsa_snapshot/manifest.json` (git) | The pinned snapshot ID |
+| `s3://<EVAL_SNAPSHOT_BUCKET>/nhtsa_snapshot/<snapshot_id>/` | `recalls.json` and `complaints.json` for that ID, one folder per snapshot |
+
+In CI, `eval.yml` logs in to AWS through GitHub OIDC (no stored keys), downloads the folder for the pinned ID and fails if the downloaded data's ID doesn't match the manifest. The role it uses can only read `nhtsa_snapshot/`. Its policies live in [`infra/aws/iam/`](../infra/aws/iam/).
+
+### Refreshing the snapshot
+
+Do this only when you want the evals to use newer data. It changes what the golden labels and baseline are measured against.
+
+```powershell
+# 1. Pull fresh NHTSA data into data/
+uv run python -m src.ingestion.ingestion
+
+# 2. Copy data/ into the fixture and write a new manifest
+uv run python -m evals.snapshot --refresh
+
+# 3. Upload the files under the new ID (an existing folder is never overwritten)
+$SNAP = (Get-Content evals/fixtures/nhtsa_snapshot/manifest.json | ConvertFrom-Json).snapshot_id
+aws s3 cp evals/fixtures/nhtsa_snapshot/ "s3://<EVAL_SNAPSHOT_BUCKET>/nhtsa_snapshot/$SNAP/" --recursive --profile auto-safety
+aws s3 ls "s3://<EVAL_SNAPSHOT_BUCKET>/nhtsa_snapshot/$SNAP/" --profile auto-safety
+```
+
+4. Re-check the golden labels in `golden_dataset.json` against the new data. Recall and complaint numbers in `relevant` and `gold_answer_contains` must still exist.
+5. Rebuild `baseline.json` (see [Regression gate](#regression-gate)), because the gate refuses a baseline built on a different snapshot.
+6. Commit `manifest.json`, `golden_dataset.json` and `baseline.json` together in one PR.
+
+Upload before you push. If CI runs while the new folder is missing from S3, the stage step fails on the download.
+
+Old snapshot folders stay in S3, so an old eval result can always be re-run on the exact data it used.
+
 # Label-based vs. RAGAS
 
 The two kinds of evals ask similar questions but check them differently:

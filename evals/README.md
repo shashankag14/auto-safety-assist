@@ -18,6 +18,8 @@ There are two kinds of evals:
 
 Run both. Where they disagree is usually the most useful signal. See [Label-based vs. RAGAS](#label-based-vs-ragas).
 
+New to the evals? Start with [docs/evals-explained.md](../docs/evals-explained.md), a plain-language overview of the snapshot, the CI quality gate and what to do when the data changes.
+
 ```mermaid
 ---
 config:

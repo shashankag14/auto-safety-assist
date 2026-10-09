@@ -226,4 +226,5 @@ resources/
 data/
 plan/
 evals/results/
-docs/todo.md
+docs/tutorials/
+docs/misc

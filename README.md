@@ -1,8 +1,25 @@
 # Auto Safety Assist
 
-Ask your car what's wrong. It answers with citations using NHTSA recalls and complaints, no guessing.
+Ask a plain-English question about your car's safety and get an answer backed by official records, with the recall or complaint number it came from.
 
-A Retrieval-Augmented Generation (RAG) system that classifies a user's question about their vehicle, retrieves relevant NHTSA recall/complaint records via vector search, and generates a grounded, cited response.
+The answers come from [NHTSA](https://www.nhtsa.gov/) (the US National Highway Traffic Safety Administration), which publishes two kinds of public records:
+
+- **Recalls**: defects a manufacturer has officially acknowledged and will fix for free
+- **Complaints**: problems reported by owners, which may or may not lead to a recall
+
+### What you can ask
+
+| You ask | What it does | Example answer (shortened) |
+|---|---|---|
+| *"Is there a recall on my 2018 BMW X5 for the charging cable catching fire?"* | Looks up **recalls** | Yes, for the plug-in hybrid X5 xDrive40e. **Recall 18V652000**: capacitors in the portable charger may fail, creating a shock or fire hazard. Dealers will replace it free of charge. |
+| *"My Camry's wipers turn on by themselves. Has anyone else reported this?"* | Searches owner **complaints** | Yes. **Complaint 11744296** reports a Toyota Camry whose wipers turn on by themselves; the dealer couldn't find a problem. |
+| *"How do car recalls work in general?"* | Answers from general knowledge, with no retrieval | A general explanation, with no recall or complaint numbers, since none were looked up |
+
+Every record-based answer cites its source, so you can check it on nhtsa.gov instead of trusting the model. If no matching record is found, it falls back to a general answer and never makes up a record number.
+
+**Coverage:** Its a project in progress, so it currently covers three vehicles: the 2018 BMW X5, the 2022 Toyota Camry and the 2022 Honda CR-V ([`TARGET_VEHICLES`](src/common/config.py)).
+
+Under the hood, it's a retrieval-augmented generation (RAG) pipeline: it classifies the question, finds the most relevant records with vector search, then has an LLM write an answer using only those records.
 
 ## Architecture
 
@@ -36,20 +53,26 @@ Dashed arrows are fallbacks. If the classifier can't parse the model's output, t
 
 ## Tech Stack
 
-- **Language:** Python 3.11+
-- **API framework:** FastAPI + Uvicorn
-- **Database:** PostgreSQL with `pgvector` for vector search
-- **Embeddings:** `sentence-transformers`, PyTorch (CPU)
-- **LLM:** OpenAI API (intent classification, response generation)
-- **DB access:** psycopg2
-- **Data processing:** pandas
-- **Packaging/deps:** `uv` / `pyproject.toml`
-- **Logging:** loguru
-- **Containerization:** Docker + Docker Compose (per-service Dockerfiles, orchestrated via `docker-compose.yml`)
-- **Container registry:** GitHub Container Registry (GHCR) for eco-system simplicity
-- **Testing:** pytest
-- **Linting:** ruff
-- **CI/CD:** GitHub Actions (lint, test, build & push each service's image to GHCR)
+| Layer | Tools | Used for |
+|---|---|---|
+| **AI / RAG** | OpenAI API (`gpt-4o-mini` by default) | Classifying the question and writing the cited answer |
+| | `sentence-transformers` (`all-MiniLM-L6-v2`, CPU) | Turning recall and complaint text into vectors |
+| **Data** | PostgreSQL + `pgvector` | Storing the vectors and finding the closest matches |
+| | pandas, psycopg2 | Cleaning NHTSA data and talking to Postgres |
+| **Services** | Python 3.11+, FastAPI + Uvicorn | The three HTTP services |
+| | loguru | Logging |
+| **Quality** | pytest, ruff | Tests and linting |
+| | RAGAS | Scoring answer quality with an LLM judge (see [evals/](evals/README.md)) |
+| **Packaging** | `uv` + `pyproject.toml` | Dependencies and virtual environments |
+| | Docker + Docker Compose | One image per service; `docker compose up` runs the whole stack locally |
+| **CI/CD** | GitHub Actions | Lint, test and build images on every change; quality gate on PRs to `main` (see [docs/ci_workflows.md](docs/ci_workflows.md)) |
+| **AWS** | ECR (+ GHCR for now) | Container images, pushed from `main` |
+| | RDS for PostgreSQL 18 + `pgvector` | Managed cloud database holding the embedded recalls and complaints |
+| | Secrets Manager | RDS password, generated and stored by RDS; fetched when needed |
+| | S3 | Pinned eval data snapshot used for CI Quality gate |
+| | IAM + GitHub OIDC | CI logs in to AWS with short-lived credentials, no stored keys (policies in [infra/aws/iam/](infra/aws/iam/)) |
+
+<!-- Deployment to AWS (ECS Fargate + ALB) is in progress. See [docs/aws-services.md](docs/aws-services.md) for the plan. -->
 
 ## Running Locally
 

@@ -1,8 +1,9 @@
 """
 Data snapshot ID for evals.
 
-Evals run on a frozen copy of the NHTSA data (evals/fixtures/nhtsa_snapshot/) so
-scores only change when code or models change. Every run records the snapshot ID.
+Evals run on a copy of the NHTSA data fetched from S3 bucket (source of truth) and
+kept in a fixture folder as a local copy so scores only change when code or models change.
+Every run records the snapshot ID.
 
 The ID is a hash of the parsed JSON, not the raw bytes, so Windows (CRLF) and
 Linux (LF) checkouts of the same data get the same ID.

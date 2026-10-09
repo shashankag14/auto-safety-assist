@@ -1,0 +1,18 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadSnapshotFiles",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::auto-safety-assist-eval-316286256563/nhtsa_snapshot/*"
+    },
+    {
+      "Sid": "ListSnapshotFolder",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::auto-safety-assist-eval-316286256563",
+      "Condition": { "StringLike": { "s3:prefix": "nhtsa_snapshot/*" } }
+    }
+  ]
+}

@@ -22,21 +22,21 @@ flowchart LR
 
     subgraph ci["ci.yml · free, every change"]
         lint["Lint + test<br/>ruff & pytest"]:::job
-        build["Build images ×3<br/>classifier · retriever · generator"]:::job
+        build["Build images ×4<br/>classifier · retriever · generator · ingestion"]:::job
     end
 
     subgraph eval["eval.yml · paid, selective"]
         gate["RAGAS regression gate"]:::job
     end
 
-    ghcr[("GHCR<br/>image registry")]:::store
+    ecr[("AWS ECR<br/>image registry")]:::store
     verdict{"Pass / Fail<br/>on the PR"}:::decision
     report[/"Job summary<br/>+ artifacts"/]:::output
 
     push --> lint
     pr --> lint
     lint -- "only if green" --> build
-    build -- "push on main /<br/>feature branch" --> ghcr
+    build -- "push on main only<br/>(OIDC → IAM role)" --> ecr
 
     prmain --> gate
     manual --> gate
@@ -51,7 +51,7 @@ flowchart LR
     classDef output fill:#f1f5f9,stroke:#64748b,stroke-width:1.5px,color:#334155
 ```
 
-- **`ci.yml`** runs on every change because it's fast and free. Images are built on every run (to catch broken Dockerfiles) but only pushed to GHCR from `main`.
+- **`ci.yml`** runs on every change because it's fast and free. Images are built on every run (to catch broken Dockerfiles) but only pushed to ECR from `main`, tagged with the commit SHA. CI logs in to AWS with GitHub OIDC, using a role that only `main` can assume and that can push images but not delete them.
 - **`eval.yml`** calls OpenAI, so it only runs when answer quality can change: PRs into `main` that touch the retriever, generator, shared config, ingestion, evals or dependencies. The monthly run catches model drift, where a model changes behind an unchanged name.
 
 ## Eval regression gate

@@ -63,7 +63,7 @@ On AWS, each service runs as its own ECS service on Fargate behind one Applicati
 | | RDS for PostgreSQL + `pgvector` | Managed cloud database holding the embedded data. Private, reachable only from the ECS tasks |
 | | VPC + security groups | Chained rules: your IP → ALB → services → database. Public subnets with no NAT gateway (to keep costs down) |
 | | Secrets Manager | RDS password and the Cloud LLM key, injected into the containers at startup |
-| | ECR (+ GHCR for now) | Container images tagged by git SHA (immutable), pushed from `main` |
+| | ECR | Container images tagged by git SHA (immutable), pushed from `main` |
 | | S3 | Pinned eval data snapshot for the CI quality gate |
 | | IAM + GitHub OIDC | CI logs in to AWS with short-lived credentials|
 | | CloudWatch Logs | Container logs from every service (retention 7 days) |

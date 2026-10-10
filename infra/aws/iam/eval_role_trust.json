@@ -12,7 +12,7 @@
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:shashankag14@74488693/auto-safety-assist@1309186771:*"
+          "token.actions.githubusercontent.com:sub": "repo:shashankag14@74488693/vehicle-safety-copilot@1309186771:*"
         }
       }
     }

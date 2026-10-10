@@ -270,82 +270,6 @@ wheels = [
 ]
 
 [[package]]
-name = "auto-safety-assist"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "fastapi" },
-    { name = "loguru" },
-    { name = "pydantic" },
-    { name = "python-dotenv" },
-    { name = "requests" },
-    { name = "uvicorn" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "ipykernel" },
-    { name = "matplotlib" },
-    { name = "pandas" },
-    { name = "pytest" },
-    { name = "ruff" },
-]
-eval = [
-    { name = "langchain-community" },
-    { name = "ragas" },
-]
-ingestion = [
-    { name = "pandas" },
-]
-intent-classifier = [
-    { name = "openai" },
-]
-response-generator = [
-    { name = "openai" },
-]
-retriever = [
-    { name = "httpx" },
-    { name = "pgvector" },
-    { name = "psycopg2" },
-    { name = "sentence-transformers" },
-    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
-    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "fastapi", specifier = ">=0.141.1" },
-    { name = "loguru", specifier = ">=0.7.3" },
-    { name = "pydantic", specifier = ">=2.13.4" },
-    { name = "python-dotenv", specifier = ">=1.2.2" },
-    { name = "requests", specifier = ">=2.34.2" },
-    { name = "uvicorn", specifier = ">=0.52.1" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "ipykernel", specifier = ">=7.3.0" },
-    { name = "matplotlib", specifier = ">=3.11.1" },
-    { name = "pandas", specifier = ">=3.0.5" },
-    { name = "pytest", specifier = ">=9.1.1" },
-    { name = "ruff", specifier = ">=0.16.3" },
-]
-eval = [
-    { name = "langchain-community", specifier = ">=0.3,<0.4" },
-    { name = "ragas", specifier = ">=0.4.3" },
-]
-ingestion = [{ name = "pandas", specifier = ">=3.0.5" }]
-intent-classifier = [{ name = "openai", specifier = ">=2.52.0" }]
-response-generator = [{ name = "openai", specifier = ">=2.52.0" }]
-retriever = [
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "pgvector", specifier = ">=0.5.0" },
-    { name = "psycopg2", specifier = ">=2.9.12" },
-    { name = "sentence-transformers", specifier = ">=5.6.1" },
-    { name = "torch", specifier = ">=2.13.0", index = "https://download.pytorch.org/whl/cpu" },
-]
-
-[[package]]
 name = "certifi"
 version = "2026.7.22"
 source = { registry = "https://pypi.org/simple" }
@@ -4140,6 +4064,82 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/03/18/ccce41535dee1be77735592bd19965f3972c82e07ee703d324709496b716/uvicorn-0.52.1.tar.gz", hash = "sha256:112ec661814189acbccd3f7b86460147cc065fc92c0821afa78918780e4354dd", size = 100571, upload-time = "2026-08-01T18:19:30.732Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c7/d5/68e6e9bca63c0badf67002890a46d3784c958de45b65e1275ec583ca1f06/uvicorn-0.52.1-py3-none-any.whl", hash = "sha256:e4403f9d93188cf9d1088e9f40e3acd12630e2df8675316704379a7fc20fff6a", size = 79859, upload-time = "2026-08-01T18:19:29.294Z" },
+]
+
+[[package]]
+name = "vehicle-safety-copilot"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "fastapi" },
+    { name = "loguru" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "requests" },
+    { name = "uvicorn" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "ipykernel" },
+    { name = "matplotlib" },
+    { name = "pandas" },
+    { name = "pytest" },
+    { name = "ruff" },
+]
+eval = [
+    { name = "langchain-community" },
+    { name = "ragas" },
+]
+ingestion = [
+    { name = "pandas" },
+]
+intent-classifier = [
+    { name = "openai" },
+]
+response-generator = [
+    { name = "openai" },
+]
+retriever = [
+    { name = "httpx" },
+    { name = "pgvector" },
+    { name = "psycopg2" },
+    { name = "sentence-transformers" },
+    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
+    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.141.1" },
+    { name = "loguru", specifier = ">=0.7.3" },
+    { name = "pydantic", specifier = ">=2.13.4" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
+    { name = "requests", specifier = ">=2.34.2" },
+    { name = "uvicorn", specifier = ">=0.52.1" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "ipykernel", specifier = ">=7.3.0" },
+    { name = "matplotlib", specifier = ">=3.11.1" },
+    { name = "pandas", specifier = ">=3.0.5" },
+    { name = "pytest", specifier = ">=9.1.1" },
+    { name = "ruff", specifier = ">=0.16.3" },
+]
+eval = [
+    { name = "langchain-community", specifier = ">=0.3,<0.4" },
+    { name = "ragas", specifier = ">=0.4.3" },
+]
+ingestion = [{ name = "pandas", specifier = ">=3.0.5" }]
+intent-classifier = [{ name = "openai", specifier = ">=2.52.0" }]
+response-generator = [{ name = "openai", specifier = ">=2.52.0" }]
+retriever = [
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pgvector", specifier = ">=0.5.0" },
+    { name = "psycopg2", specifier = ">=2.9.12" },
+    { name = "sentence-transformers", specifier = ">=5.6.1" },
+    { name = "torch", specifier = ">=2.13.0", index = "https://download.pytorch.org/whl/cpu" },
 ]
 
 [[package]]

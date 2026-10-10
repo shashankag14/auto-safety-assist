@@ -1,5 +1,5 @@
 [project]
-name = "auto-safety-assist"
+name = "vehicle-safety-copilot"
 version = "0.1.0"
 description = "Ask your car what's wrong. It answers with citations using NHTSA recalls and complaints, no guessing."
 readme = "README.md"

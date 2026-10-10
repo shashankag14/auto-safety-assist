@@ -1,7 +1,7 @@
-# Auto Safety Assist
+# VehicleSafetyCopilot
 
-[![CI](https://github.com/shashankag14/auto-safety-assist/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/shashankag14/auto-safety-assist/actions/workflows/ci.yml)
-[![Eval gate](https://github.com/shashankag14/auto-safety-assist/actions/workflows/eval.yml/badge.svg)](https://github.com/shashankag14/auto-safety-assist/actions/workflows/eval.yml)
+[![CI](https://github.com/shashankag14/vehicle-safety-copilot/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/shashankag14/vehicle-safety-copilot/actions/workflows/ci.yml)
+[![Eval gate](https://github.com/shashankag14/vehicle-safety-copilot/actions/workflows/eval.yml/badge.svg)](https://github.com/shashankag14/vehicle-safety-copilot/actions/workflows/eval.yml)
 ![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![Docker](https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white)

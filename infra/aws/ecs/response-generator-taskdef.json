@@ -1,0 +1,29 @@
+{
+  "family": "auto-safety-assist-response-generator",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "runtimePlatform": { "cpuArchitecture": "X86_64", "operatingSystemFamily": "LINUX" },
+  "executionRoleArn": "arn:aws:iam::316286256563:role/auto-safety-assist-ecs-execution",
+  "containerDefinitions": [
+    {
+      "name": "response-generator",
+      "image": "316286256563.dkr.ecr.us-east-1.amazonaws.com/auto-safety-assist/response-generator:b306cc881291ee31966e7ad88d62c5b75fe6a08a",
+      "essential": true,
+      "portMappings": [{ "containerPort": 8002, "protocol": "tcp" }],
+      "secrets": [
+        { "name": "OPENAI_API_KEY", "valueFrom": "arn:aws:secretsmanager:us-east-1:316286256563:secret:auto-safety-assist/openai-api-key-X3aGIk"}
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/auto-safety-assist",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "response-generator"
+        }
+      }
+    }
+  ],
+  "tags": [{ "key": "Project", "value": "auto-safety-assist" }]
+}

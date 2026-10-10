@@ -1,0 +1,34 @@
+{
+  "family": "auto-safety-assist-ingestion",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "runtimePlatform": { "cpuArchitecture": "X86_64", "operatingSystemFamily": "LINUX" },
+  "executionRoleArn": "arn:aws:iam::316286256563:role/auto-safety-assist-ecs-execution",
+  "containerDefinitions": [
+    {
+      "name": "ingestion",
+      "image": "316286256563.dkr.ecr.us-east-1.amazonaws.com/auto-safety-assist/ingestion:b306cc881291ee31966e7ad88d62c5b75fe6a08a",
+      "essential": true,
+      "environment": [
+        { "name": "POSTGRES_HOST", "value": "auto-safety-assist-db.cc98u0kesu8p.us-east-1.rds.amazonaws.com" },
+        { "name": "POSTGRES_PORT", "value": "5432" },
+        { "name": "DATABASE_NAME", "value": "nhtsa" }
+      ],
+      "secrets": [
+        { "name": "POSTGRES_USER",     "valueFrom": "arn:aws:secretsmanager:us-east-1:316286256563:secret:rds!db-1af0cc39-1a05-434a-a509-cb835d4fdb4a-6rcdWT:username::" },
+        { "name": "POSTGRES_PASSWORD", "valueFrom": "arn:aws:secretsmanager:us-east-1:316286256563:secret:rds!db-1af0cc39-1a05-434a-a509-cb835d4fdb4a-6rcdWT:password::" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/auto-safety-assist",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ingestion"
+        }
+      }
+    }
+  ],
+  "tags": [{ "key": "Project", "value": "auto-safety-assist" }]
+}
